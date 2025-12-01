@@ -38,8 +38,8 @@ class UserRepository {
     
     private fun getSampleUser(): User {
         return User(
-            name = "Alex",
-            email = "alex@example.com",
+            name = "Akram",
+            email = "akram@example.com",
             xp = 750,
             level = 3,
             streak = 7,

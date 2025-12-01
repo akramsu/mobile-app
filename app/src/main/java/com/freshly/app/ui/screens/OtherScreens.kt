@@ -23,6 +23,7 @@ import com.freshly.app.ui.components.SecondaryButton
 import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.ui.theme.Warning500
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -1206,9 +1207,19 @@ fun RecipeRecommendationCard(
 fun SettingsScreen(
     onBack: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferencesManager = remember { com.freshly.app.utils.PreferencesManager(context) }
+    val scope = rememberCoroutineScope()
+    
     var expiryReminders by remember { mutableStateOf(true) }
     var soundEffects by remember { mutableStateOf(true) }
-    var darkMode by remember { mutableStateOf(false) }
+    val darkModeFlow by preferencesManager.darkMode.collectAsState(initial = false)
+    var darkMode by remember { mutableStateOf(darkModeFlow) }
+    
+    LaunchedEffect(darkModeFlow) {
+        darkMode = darkModeFlow
+    }
+    
     var dietaryRestrictions by remember { mutableStateOf(setOf("vegetarian")) }
     var region by remember { mutableStateOf("US") }
     var privateProfile by remember { mutableStateOf(false) }
@@ -1359,7 +1370,11 @@ fun SettingsScreen(
                             }
                             Switch(
                                 checked = darkMode,
-                                onCheckedChange = { darkMode = it },
+                                onCheckedChange = { 
+                                    scope.launch {
+                                        preferencesManager.setDarkMode(it)
+                                    }
+                                },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
                                     checkedTrackColor = Primary500

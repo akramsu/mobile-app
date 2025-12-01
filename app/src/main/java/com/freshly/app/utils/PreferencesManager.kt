@@ -61,4 +61,15 @@ class PreferencesManager(private val context: Context) {
         .map { preferences ->
             preferences[NOTIFICATIONS_ENABLED_KEY] ?: true
         }
+    
+    suspend fun setDarkMode(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DARK_MODE_KEY] = enabled
+        }
+    }
+    
+    val darkMode: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[DARK_MODE_KEY] ?: false
+        }
 }

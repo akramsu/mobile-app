@@ -36,8 +36,12 @@ fun MainAppScreen(
                     onAddItem = { mainNavController.navigate("add_item") },
                     onNotifications = { mainNavController.navigate("notifications") }
                 )
-                MainTab.Pantry.route -> PantryScreen()
-                MainTab.AIChef.route -> AIChefScreen()
+                MainTab.Pantry.route -> PantryScreen(
+                    onAddItem = { mainNavController.navigate("add_item") }
+                )
+                MainTab.AIChef.route -> AIChefScreen(
+                    onRecipeClick = { recipeId -> mainNavController.navigate("recipe_detail/$recipeId") }
+                )
                 MainTab.Analytics.route -> AnalyticsScreen(
                     onViewRecommendations = { mainNavController.navigate("recommendations") }
                 )

@@ -15,10 +15,13 @@ fun FreshlyCard(
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     elevation: Int = 2,
     border: BorderStroke? = null,
+    onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier,
+        onClick = onClick ?: {},
+        enabled = onClick != null,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = backgroundColor

@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 class PantryViewModel : ViewModel() {
     
-    private val repository = PantryRepository()
+    val repository = PantryRepository()
     
     private val _deletedItem = MutableStateFlow<PantryItem?>(null)
     

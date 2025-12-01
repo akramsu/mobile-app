@@ -4,28 +4,37 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.freshly.app.data.model.Category
 import com.freshly.app.ui.components.*
+import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.viewmodel.PantryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantryScreen(
+    onAddItem: () -> Unit = {},
     viewModel: PantryViewModel = viewModel()
 ) {
-    var selectedCategory by remember { mutableStateOf(Category.FRIDGE) }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var showSnackbar by remember { mutableStateOf(false) }
     var deletedItemName by remember { mutableStateOf("") }
     
-    val items by viewModel.getItemsByCategory(selectedCategory).collectAsState(initial = emptyList())
+    val allItems by viewModel.repository.items.collectAsState(initial = emptyList())
+    val filteredItems = if (selectedCategory == null) {
+        allItems
+    } else {
+        allItems.filter { it.category == selectedCategory }
+    }
     
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -51,6 +60,18 @@ fun PantryScreen(
                 title = "Pantry",
                 onSettingsClick = { /* Navigate to settings */ }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddItem,
+                containerColor = Primary500,
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Item"
+                )
+            }
         }
     ) { padding ->
         Column(
@@ -65,6 +86,12 @@ fun PantryScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                CategoryChip(
+                    text = "All",
+                    emoji = "📋",
+                    selected = selectedCategory == null,
+                    onClick = { selectedCategory = null }
+                )
                 CategoryChip(
                     text = "Fridge",
                     emoji = "🧊",
@@ -105,15 +132,16 @@ fun PantryScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Items List
-            if (items.isEmpty()) {
+            if (filteredItems.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(32.dp),
                     contentAlignment = androidx.compose.ui.Alignment.Center
                 ) {
+                    val categoryName = selectedCategory?.name?.lowercase() ?: "pantry"
                     Text(
-                        text = "No items in ${selectedCategory.name.lowercase()}",
+                        text = if (selectedCategory == null) "No items in pantry" else "No items in $categoryName",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -125,7 +153,7 @@ fun PantryScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(
-                        items = items.filter {
+                        items = filteredItems.filter {
                             searchQuery.isEmpty() || it.name.contains(searchQuery, ignoreCase = true)
                         },
                         key = { it.id }
