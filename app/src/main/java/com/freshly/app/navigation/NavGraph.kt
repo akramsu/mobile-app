@@ -90,7 +90,12 @@ fun AppNavGraph(
         
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    // Logout - navigate back to splash screen
+                    navController.navigate(Screen.Splash.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
             )
         }
     }

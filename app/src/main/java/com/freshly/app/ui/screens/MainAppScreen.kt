@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -23,18 +24,12 @@ fun MainAppScreen(
     var selectedTab by remember { mutableStateOf(MainTab.Home.route) }
     val innerNavController = rememberNavController()
     
-    Scaffold(
-        bottomBar = {
-            BottomNav(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
-            )
-        }
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Main content
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(bottom = 96.dp)
         ) {
             when (selectedTab) {
                 MainTab.Home.route -> HomeScreen(
@@ -50,6 +45,19 @@ fun MainAppScreen(
                     onSettingsClick = { mainNavController.navigate("settings") }
                 )
             }
+        }
+        
+        // Bottom navigation pill - aligned to bottom
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 12.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            BottomNav(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
         }
     }
 }

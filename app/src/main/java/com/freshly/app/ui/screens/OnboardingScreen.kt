@@ -61,6 +61,7 @@ fun OnboardingScreen(
     )
     
     val pagerState = rememberPagerState()
+    val coroutineScope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == pages.size - 1
     
     Box(
@@ -74,21 +75,8 @@ fun OnboardingScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Skip button
-            if (!isLastPage) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    SecondaryButton(
-                        text = "Skip",
-                        onClick = onComplete,
-                        modifier = Modifier.width(100.dp)
-                    )
-                }
-            } else {
-                Spacer(modifier = Modifier.height(56.dp))
-            }
+            // Top spacer (removed skip button)
+            Spacer(modifier = Modifier.height(56.dp))
             
             Spacer(modifier = Modifier.height(40.dp))
             
@@ -111,24 +99,20 @@ fun OnboardingScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Action button
-            if (isLastPage) {
-                PrimaryButton(
-                    text = "Get Started",
-                    onClick = onComplete,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                PrimaryButton(
-                    text = "Next",
-                    onClick = {
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+            // Action button - Next for pages 1-2, Get Started for page 3
+            PrimaryButton(
+                text = if (isLastPage) "Get Started" else "Next",
+                onClick = {
+                    if (isLastPage) {
+                        onComplete()
+                    } else {
+                        coroutineScope.launch {
                             pagerState.animateScrollToPage(pagerState.currentPage + 1)
                         }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
         }

@@ -78,6 +78,9 @@ dependencies {
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
+    
+    // Google Fonts
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.5.4")
 
     // DataStore (replaces localStorage)
     implementation("androidx.datastore:datastore-preferences:1.0.0")

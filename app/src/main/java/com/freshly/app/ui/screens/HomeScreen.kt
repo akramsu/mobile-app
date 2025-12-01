@@ -39,21 +39,21 @@ fun HomeScreen(
 ) {
     val user by viewModel.user.collectAsState()
     val expiringItems by viewModel.expiringItems.collectAsState()
+    var selectedAction by remember { mutableStateOf("Search") }
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // Greeting Section
         item {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "${DateUtils.getGreeting()}, ${user.name} 👋",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "You have ${expiringItems.size} items expiring today",
                     style = MaterialTheme.typography.bodyMedium,
@@ -259,27 +259,33 @@ fun HomeScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 QuickActionButton(
                     icon = Icons.Default.Search,
                     label = "Search",
-                    isPrimary = true,
-                    onClick = {},
+                    isSelected = selectedAction == "Search",
+                    onClick = { selectedAction = "Search" },
                     modifier = Modifier.weight(1f)
                 )
                 QuickActionButton(
                     icon = Icons.Default.Add,
                     label = "Add Item",
-                    isPrimary = false,
-                    onClick = onAddItem,
+                    isSelected = selectedAction == "Add Item",
+                    onClick = { 
+                        selectedAction = "Add Item"
+                        onAddItem()
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 QuickActionButton(
                     icon = Icons.Default.Notifications,
                     label = "Notifications",
-                    isPrimary = false,
-                    onClick = onNotifications,
+                    isSelected = selectedAction == "Notifications",
+                    onClick = { 
+                        selectedAction = "Notifications"
+                        onNotifications()
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -338,15 +344,14 @@ fun HomeScreen(
 fun QuickActionButton(
     icon: ImageVector,
     label: String,
-    isPrimary: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier
-            .aspectRatio(1f),
-        colors = if (isPrimary) {
+        modifier = modifier.height(72.dp),
+        colors = if (isSelected) {
             ButtonDefaults.buttonColors(
                 containerColor = Primary500,
                 contentColor = Color.White
@@ -357,24 +362,25 @@ fun QuickActionButton(
                 contentColor = MaterialTheme.colorScheme.onSurface
             )
         },
-        border = if (!isPrimary) {
+        border = if (!isSelected) {
             BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
         } else null,
-        shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(16.dp)
+        shape = RoundedCornerShape(12.dp),
+        contentPadding = PaddingValues(8.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(22.dp)
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold
             )
         }

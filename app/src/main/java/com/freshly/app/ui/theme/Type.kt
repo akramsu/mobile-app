@@ -5,13 +5,34 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
+import com.freshly.app.R
 
-// Note: Add Urbanist and Inter font files to res/font/ directory
-// For now using system fonts as fallback
+// Google Fonts provider for Urbanist and Inter
+val provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
 
-val UrbanistFontFamily = FontFamily.SansSerif // Replace with actual font
-val InterFontFamily = FontFamily.SansSerif // Replace with actual font
+val UrbanistFont = GoogleFont("Urbanist")
+val InterFont = GoogleFont("Inter")
+
+val UrbanistFontFamily = FontFamily(
+    Font(googleFont = UrbanistFont, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = UrbanistFont, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = UrbanistFont, fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = UrbanistFont, fontProvider = provider, weight = FontWeight.Bold)
+)
+
+val InterFontFamily = FontFamily(
+    Font(googleFont = InterFont, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = InterFont, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = InterFont, fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = InterFont, fontProvider = provider, weight = FontWeight.Bold)
+)
 
 val Typography = Typography(
     // Display styles (Urbanist Bold)
