@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Freshly</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_pantry">Pantry</string>
+    <string name="nav_chef">Chef</string>
+    <string name="nav_analytics">Analytics</string>
+    <string name="nav_profile">Profile</string>
+    
+    <!-- Onboarding -->
+    <string name="onboarding_title_1">Track Your Food</string>
+    <string name="onboarding_desc_1">Keep tabs on everything in your pantry, fridge, and freezer</string>
+    <string name="onboarding_title_2">Reduce Waste</string>
+    <string name="onboarding_desc_2">Get notified before items expire and save money</string>
+    <string name="onboarding_title_3">AI-Powered Recipes</string>
+    <string name="onboarding_desc_3">Create delicious meals with ingredients you already have</string>
+    <string name="get_started">Get Started</string>
+    <string name="next">Next</string>
+    <string name="skip">Skip</string>
+    
+    <!-- Common -->
+    <string name="add">Add</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="back">Back</string>
+    <string name="search">Search</string>
+    <string name="filter">Filter</string>
+    <string name="undo">Undo</string>
+    
+    <!-- Categories -->
+    <string name="category_fridge">Fridge</string>
+    <string name="category_freezer">Freezer</string>
+    <string name="category_pantry">Pantry</string>
+    
+    <!-- Status -->
+    <string name="status_fresh">Fresh</string>
+    <string name="status_expiring_soon">Expiring Soon</string>
+    <string name="status_expired">Expired</string>
+    
+    <!-- Content Descriptions -->
+    <string name="cd_back_button">Back button</string>
+    <string name="cd_settings_button">Settings button</string>
+    <string name="cd_notifications_button">Notifications button</string>
+    <string name="cd_item_image">Item image</string>
+    <string name="cd_user_avatar">User avatar</string>
+    <string name="cd_achievement_badge">Achievement badge</string>
+</resources>
