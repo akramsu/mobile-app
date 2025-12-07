@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -35,15 +37,16 @@ import com.freshly.app.viewmodel.HomeViewModel
 fun HomeScreen(
     onAddItem: () -> Unit = {},
     onNotifications: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
     val expiringItems by viewModel.expiringItems.collectAsState()
-    var selectedAction by remember { mutableStateOf("Search") }
+    var selectedAction by remember { mutableStateOf("") }
     
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // Greeting Section
@@ -259,14 +262,16 @@ fun HomeScreen(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 QuickActionButton(
                     icon = Icons.Default.Search,
                     label = "Search",
                     isSelected = selectedAction == "Search",
-                    onClick = { selectedAction = "Search" },
-                    modifier = Modifier.weight(1f)
+                    onClick = { 
+                        selectedAction = "Search"
+                        onSearchClick()
+                    }
                 )
                 QuickActionButton(
                     icon = Icons.Default.Add,
@@ -275,18 +280,16 @@ fun HomeScreen(
                     onClick = { 
                         selectedAction = "Add Item"
                         onAddItem()
-                    },
-                    modifier = Modifier.weight(1f)
+                    }
                 )
                 QuickActionButton(
                     icon = Icons.Default.Notifications,
-                    label = "Notifications",
+                    label = "Alerts",
                     isSelected = selectedAction == "Notifications",
                     onClick = { 
                         selectedAction = "Notifications"
                         onNotifications()
-                    },
-                    modifier = Modifier.weight(1f)
+                    }
                 )
             }
         }
@@ -348,42 +351,46 @@ fun QuickActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(72.dp),
-        colors = if (isSelected) {
-            ButtonDefaults.buttonColors(
-                containerColor = Primary500,
-                contentColor = Color.White
-            )
-        } else {
-            ButtonDefaults.outlinedButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            )
-        },
-        border = if (!isSelected) {
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        } else null,
-        shape = RoundedCornerShape(12.dp),
-        contentPadding = PaddingValues(8.dp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        // Circular button with gradient background when selected
+        Surface(
+            onClick = onClick,
+            modifier = Modifier
+                .size(64.dp)
+                .shadow(
+                    elevation = if (isSelected) 8.dp else 4.dp,
+                    shape = CircleShape,
+                    clip = false
+                ),
+            shape = CircleShape,
+            color = if (isSelected) Primary500 else Color.White,
+            border = if (!isSelected) {
+                BorderStroke(1.5.dp, Color(0xFFE5E7EB))
+            } else null
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(28.dp),
+                    tint = if (isSelected) Color.White else Color(0xFF6B7280)
+                )
+            }
         }
+        
+        // Label
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (isSelected) Color.Black else Color(0xFF6B7280)
+        )
     }
 }
 

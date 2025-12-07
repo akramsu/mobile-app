@@ -57,15 +57,15 @@ fun PantryScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopBar(
-                title = "Pantry",
-                onSettingsClick = { /* Navigate to settings */ }
+                title = "Pantry"
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddItem,
                 containerColor = Primary500,
-                contentColor = Color.White
+                contentColor = Color.White,
+                modifier = Modifier.padding(bottom = 80.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -83,32 +83,36 @@ fun PantryScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 CategoryChip(
                     text = "All",
                     emoji = "📋",
                     selected = selectedCategory == null,
-                    onClick = { selectedCategory = null }
+                    onClick = { selectedCategory = null },
+                    modifier = Modifier.weight(1f)
                 )
                 CategoryChip(
                     text = "Fridge",
                     emoji = "🧊",
                     selected = selectedCategory == Category.FRIDGE,
-                    onClick = { selectedCategory = Category.FRIDGE }
+                    onClick = { selectedCategory = Category.FRIDGE },
+                    modifier = Modifier.weight(1f)
                 )
                 CategoryChip(
                     text = "Freezer",
                     emoji = "❄️",
                     selected = selectedCategory == Category.FREEZER,
-                    onClick = { selectedCategory = Category.FREEZER }
+                    onClick = { selectedCategory = Category.FREEZER },
+                    modifier = Modifier.weight(1f)
                 )
                 CategoryChip(
                     text = "Pantry",
                     emoji = "📦",
                     selected = selectedCategory == Category.PANTRY,
-                    onClick = { selectedCategory = Category.PANTRY }
+                    onClick = { selectedCategory = Category.PANTRY },
+                    modifier = Modifier.weight(1f)
                 )
             }
             
@@ -149,7 +153,7 @@ fun PantryScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(

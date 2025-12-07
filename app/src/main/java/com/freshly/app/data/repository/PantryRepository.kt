@@ -89,6 +89,60 @@ class PantryRepository {
                 unit = "lbs",
                 addedDate = today.minus(20, DateTimeUnit.DAY).toString(),
                 expiryDate = today.plus(365, DateTimeUnit.DAY).toString()
+            ),
+            PantryItem(
+                id = UUID.randomUUID().toString(),
+                name = "Blueberries",
+                category = Category.FRIDGE,
+                quantity = 1,
+                unit = "pint",
+                addedDate = today.minus(3, DateTimeUnit.DAY).toString(),
+                expiryDate = today.plus(1, DateTimeUnit.DAY).toString()
+            ),
+            PantryItem(
+                id = UUID.randomUUID().toString(),
+                name = "Spinach",
+                category = Category.FRIDGE,
+                quantity = 1,
+                unit = "bunch",
+                addedDate = today.minus(4, DateTimeUnit.DAY).toString(),
+                expiryDate = today.plus(2, DateTimeUnit.DAY).toString()
+            ),
+            PantryItem(
+                id = UUID.randomUUID().toString(),
+                name = "Ground Beef",
+                category = Category.FRIDGE,
+                quantity = 1,
+                unit = "lb",
+                addedDate = today.minus(1, DateTimeUnit.DAY).toString(),
+                expiryDate = today.plus(3, DateTimeUnit.DAY).toString()
+            ),
+            PantryItem(
+                id = UUID.randomUUID().toString(),
+                name = "Tomatoes",
+                category = Category.FRIDGE,
+                quantity = 4,
+                unit = "count",
+                addedDate = today.minus(2, DateTimeUnit.DAY).toString(),
+                expiryDate = today.plus(2, DateTimeUnit.DAY).toString()
+            ),
+            PantryItem(
+                id = UUID.randomUUID().toString(),
+                name = "Bread",
+                category = Category.PANTRY,
+                quantity = 1,
+                unit = "loaf",
+                addedDate = today.minus(1, DateTimeUnit.DAY).toString(),
+                expiryDate = today.plus(3, DateTimeUnit.DAY).toString()
+            ),
+            PantryItem(
+                id = UUID.randomUUID().toString(),
+                name = "Yogurt",
+                category = Category.FRIDGE,
+                quantity = 6,
+                unit = "cups",
+                addedDate = today.minus(3, DateTimeUnit.DAY).toString(),
+                expiryDate = today.plus(1, DateTimeUnit.DAY).toString()
             )
         )
     }

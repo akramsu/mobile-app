@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -1205,7 +1207,8 @@ fun RecipeRecommendationCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onLogout: () -> Unit = onBack
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesManager = remember { com.freshly.app.utils.PreferencesManager(context) }
@@ -1247,7 +1250,11 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(text = "🔔", fontSize = 20.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.Notifications,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Text(
                             text = "Notifications",
                             fontSize = 18.sp,
@@ -1336,7 +1343,11 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(text = "🌙", fontSize = 20.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.Brightness6,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Text(
                             text = "Display",
                             fontSize = 18.sp,
@@ -1385,92 +1396,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Preferences Section
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(text = "🌍", fontSize = 20.sp)
-                        Text(
-                            text = "Preferences",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    // Dietary Restrictions
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = "Dietary Restrictions",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                            
-                            val options = listOf("Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free")
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                options.take(2).forEach { option ->
-                                    val isSelected = dietaryRestrictions.contains(option.lowercase())
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = {
-                                            dietaryRestrictions = if (isSelected) {
-                                                dietaryRestrictions - option.lowercase()
-                                            } else {
-                                                dietaryRestrictions + option.lowercase()
-                                            }
-                                        },
-                                        label = { Text(option, fontSize = 13.sp) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = Primary500,
-                                            selectedLabelColor = Color.White
-                                        )
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                options.drop(2).forEach { option ->
-                                    val isSelected = dietaryRestrictions.contains(option.lowercase())
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = {
-                                            dietaryRestrictions = if (isSelected) {
-                                                dietaryRestrictions - option.lowercase()
-                                            } else {
-                                                dietaryRestrictions + option.lowercase()
-                                            }
-                                        },
-                                        label = { Text(option, fontSize = 13.sp) },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = Primary500,
-                                            selectedLabelColor = Color.White
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // About & Help Section
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -1478,9 +1403,13 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(text = "❓", fontSize = 20.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Text(
-                            text = "About & Help",
+                            text = "About",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1530,91 +1459,36 @@ fun SettingsScreen(
                             }
                         }
                     }
-                    
-                    // Help & Support Button
-                    Surface(
-                        onClick = { /* TODO */ },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
-                    ) {
-                        Text(
-                            text = "Help & Support",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        )
-                    }
-                    
-                    // Privacy Policy Button
-                    Surface(
-                        onClick = { /* TODO */ },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
-                    ) {
-                        Text(
-                            text = "Privacy Policy",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        )
-                    }
-                    
-                    // Terms of Service Button
-                    Surface(
-                        onClick = { /* TODO */ },
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
-                    ) {
-                        Text(
-                            text = "Terms of Service",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        )
-                    }
                 }
             }
 
             // Action Buttons
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Surface(
+                    onClick = onLogout,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFF5F5),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF5757)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    SecondaryButton(
-                        text = "Contact Support",
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    Surface(
-                        onClick = onBack,
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFFFF5F5),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF5757)),
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "↗️ Logout",
-                                color = Color(0xFFFF5757),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Outlined.Logout,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = Color(0xFFFF5757)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Logout",
+                            color = Color(0xFFFF5757),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
                     }
                 }
             }

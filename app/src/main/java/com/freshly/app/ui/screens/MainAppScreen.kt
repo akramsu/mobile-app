@@ -25,16 +25,15 @@ fun MainAppScreen(
     val innerNavController = rememberNavController()
     
     Box(modifier = Modifier.fillMaxSize()) {
-        // Main content
+        // Main content - extends to bottom to show background behind nav pill
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 96.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             when (selectedTab) {
                 MainTab.Home.route -> HomeScreen(
                     onAddItem = { mainNavController.navigate("add_item") },
-                    onNotifications = { mainNavController.navigate("notifications") }
+                    onNotifications = { mainNavController.navigate("notifications") },
+                    onSearchClick = { selectedTab = MainTab.Pantry.route }
                 )
                 MainTab.Pantry.route -> PantryScreen(
                     onAddItem = { mainNavController.navigate("add_item") }
@@ -42,20 +41,18 @@ fun MainAppScreen(
                 MainTab.AIChef.route -> AIChefScreen(
                     onRecipeClick = { recipeId -> mainNavController.navigate("recipe_detail/$recipeId") }
                 )
-                MainTab.Analytics.route -> AnalyticsScreen(
-                    onViewRecommendations = { mainNavController.navigate("recommendations") }
-                )
+                MainTab.AIAssistant.route -> AIAssistantScreen()
                 MainTab.Profile.route -> ProfileScreen(
                     onSettingsClick = { mainNavController.navigate("settings") }
                 )
             }
         }
         
-        // Bottom navigation pill - aligned to bottom
+        // Bottom navigation pill - floating over content with transparent background
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 12.dp),
+                .padding(bottom = 20.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             BottomNav(

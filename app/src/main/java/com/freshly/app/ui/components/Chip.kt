@@ -60,18 +60,19 @@ fun CategoryChip(
             .clip(RoundedCornerShape(20.dp))
             .background(if (selected) Primary500 else MaterialTheme.colorScheme.surfaceVariant)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.Center
         ) {
-            Text(text = emoji)
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
                 color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
             )
         }
     }

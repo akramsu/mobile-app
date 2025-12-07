@@ -25,6 +25,6 @@ sealed class MainTab(val route: String) {
     object Home : MainTab("home")
     object Pantry : MainTab("pantry")
     object AIChef : MainTab("ai_chef")
-    object Analytics : MainTab("analytics")
+    object AIAssistant : MainTab("ai_assistant")
     object Profile : MainTab("profile")
 }

@@ -43,6 +43,7 @@ fun ProfileScreen(
         }
     ) { padding ->
         androidx.compose.foundation.lazy.LazyColumn(
+            contentPadding = PaddingValues(bottom = 100.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
