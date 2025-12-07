@@ -584,25 +584,6 @@ fun RecipeDetailScreen(
                             }
                         }
                     }
-
-                    // Action Buttons
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        PrimaryButton(
-                            text = "👨‍🍳 Cook Now",
-                            onClick = { /* TODO */ },
-                            modifier = Modifier.weight(1f)
-                        )
-                        SecondaryButton(
-                            text = "💾 Save",
-                            onClick = { /* TODO */ },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
                 }
             }
         }

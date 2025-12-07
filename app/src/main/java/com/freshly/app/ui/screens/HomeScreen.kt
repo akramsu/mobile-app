@@ -38,6 +38,7 @@ fun HomeScreen(
     onAddItem: () -> Unit = {},
     onNotifications: () -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onRecipeClick: (String) -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -296,12 +297,12 @@ fun HomeScreen(
         
         // Recipe Card (AI-styled)
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(2.dp, AI500, RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+            Surface(
+                onClick = { onRecipeClick("pasta-primavera") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(2.dp, AI500)
             ) {
                 Column {
                     // Recipe image area with gradient
