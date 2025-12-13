@@ -788,61 +788,69 @@ data class RecipeStep(
 
 @Composable
 fun NotificationsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: PantryViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var notifications by remember {
-        mutableStateOf(
-            listOf(
-                NotificationItem(
-                    id = "1",
-                    title = "Item Expiring Soon",
-                    message = "Your milk expires in 2 days. Consider using it in a recipe!",
-                    type = NotificationType.EXPIRING,
-                    timestamp = "2 hours ago",
-                    icon = "🥛",
-                    read = false
-                ),
-                NotificationItem(
-                    id = "2",
-                    title = "Recipe Saved",
-                    message = "You saved 'Tomato Pasta' to your favorites",
-                    type = NotificationType.SAVED,
-                    timestamp = "5 hours ago",
-                    icon = "🍝",
-                    read = false
-                ),
-                NotificationItem(
-                    id = "3",
-                    title = "New Recipe Available",
-                    message = "AI Chef recommends 'Berry Smoothie Bowl' based on your pantry",
-                    type = NotificationType.RECIPE,
-                    timestamp = "1 day ago",
-                    icon = "🥤",
-                    read = true
-                ),
-                NotificationItem(
-                    id = "4",
-                    title = "Streak Milestone",
-                    message = "Congratulations! You've reached a 15-day streak!",
-                    type = NotificationType.STREAK,
-                    timestamp = "2 days ago",
-                    icon = "🔥",
-                    read = true
-                ),
-                NotificationItem(
-                    id = "5",
-                    title = "Multiple Items Expiring",
-                    message = "Berries and yogurt expire tomorrow. Create a recipe now!",
-                    type = NotificationType.EXPIRING,
-                    timestamp = "3 days ago",
-                    icon = "🫐",
-                    read = true
+    val allItems by viewModel.repository.items.collectAsState(initial = emptyList())
+    
+    // Generate notifications from expiring items
+    val notifications = remember(allItems) {
+        val expiringItems = allItems.filter { item ->
+            val daysUntilExpiry = item.getDaysUntilExpiry()
+            daysUntilExpiry in 0..7
+        }.sortedBy { it.getDaysUntilExpiry() }
+        
+        expiringItems.mapIndexed { index, item ->
+            val days = item.getDaysUntilExpiry()
+            val (title, message, type) = when {
+                days == 0 -> Triple(
+                    "Item Expires TODAY!",
+                    "${item.name} expires today. Use it now or it will spoil!",
+                    NotificationType.CRITICAL
                 )
+                days == 1 -> Triple(
+                    "Item Expires Tomorrow",
+                    "${item.name} expires tomorrow. Plan to use it soon!",
+                    NotificationType.EXPIRING
+                )
+                days in 2..3 -> Triple(
+                    "Item Expiring Soon",
+                    "${item.name} expires in $days days. Consider using it in a recipe!",
+                    NotificationType.EXPIRING
+                )
+                else -> Triple(
+                    "Upcoming Expiry",
+                    "${item.name} expires in $days days.",
+                    NotificationType.INFO
+                )
+            }
+            
+            val icon = when (item.category.name.lowercase()) {
+                "fridge" -> "🧊"
+                "freezer" -> "❄️"
+                "pantry" -> "📦"
+                else -> "🍎"
+            }
+            
+            NotificationItem(
+                id = item.id,
+                title = title,
+                message = message,
+                type = type,
+                timestamp = when {
+                    days == 0 -> "Today"
+                    days == 1 -> "Tomorrow"
+                    else -> "In $days days"
+                },
+                icon = icon,
+                itemName = item.name,
+                daysUntilExpiry = days,
+                read = false
             )
-        )
+        }
     }
 
-    val unreadCount = notifications.count { !it.read }
+    val unreadCount = notifications.size
 
     Column(modifier = Modifier.fillMaxSize()) {
         // App Top Bar with subtitle and actions
@@ -873,7 +881,7 @@ fun NotificationsScreen(
                         )
                         if (unreadCount > 0) {
                             Text(
-                                text = "$unreadCount new",
+                                text = "$unreadCount items expiring",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -884,21 +892,6 @@ fun NotificationsScreen(
                                 color = Color.Gray
                             )
                         }
-                    }
-                }
-                
-                if (unreadCount > 0) {
-                    TextButton(
-                        onClick = {
-                            notifications = notifications.map { it.copy(read = true) }
-                        }
-                    ) {
-                        Text(
-                            text = "Mark all",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Primary500
-                        )
                     }
                 }
             }
@@ -936,15 +929,20 @@ fun NotificationsScreen(
                 items(notifications.size) { index ->
                     val notification = notifications[index]
                     NotificationCard(
-                        notification = notification,
-                        onMarkAsRead = {
-                            notifications = notifications.map {
-                                if (it.id == notification.id) it.copy(read = true) else it
-                            }
-                        },
-                        onDelete = {
-                            notifications = notifications.filter { it.id != notification.id }
-                        }
+                        notification = notification
+                    )
+                }
+                
+                // Info message at bottom
+                item {
+                    Text(
+                        text = "💡 Tip: Items are automatically removed when they expire or are used",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp)
                     )
                 }
                 
@@ -958,7 +956,7 @@ fun NotificationsScreen(
 }
 
 enum class NotificationType {
-    EXPIRING, SAVED, RECIPE, STREAK
+    CRITICAL, EXPIRING, INFO, SAVED, RECIPE, STREAK
 }
 
 data class NotificationItem(
@@ -968,35 +966,22 @@ data class NotificationItem(
     val type: NotificationType,
     val timestamp: String,
     val icon: String,
+    val itemName: String = "",
+    val daysUntilExpiry: Int = 0,
     val read: Boolean
 )
 
 @Composable
 fun NotificationCard(
-    notification: NotificationItem,
-    onMarkAsRead: () -> Unit,
-    onDelete: () -> Unit
+    notification: NotificationItem
 ) {
-    val backgroundColor: Color
-    val borderColor: Color
-    
-    when (notification.type) {
-        NotificationType.EXPIRING -> {
-            backgroundColor = Warning500.copy(alpha = 0.05f)
-            borderColor = Warning500
-        }
-        NotificationType.RECIPE -> {
-            backgroundColor = AI500.copy(alpha = 0.05f)
-            borderColor = AI500
-        }
-        NotificationType.STREAK -> {
-            backgroundColor = Primary500.copy(alpha = 0.05f)
-            borderColor = Primary500
-        }
-        NotificationType.SAVED -> {
-            backgroundColor = Primary500.copy(alpha = 0.05f)
-            borderColor = Primary500
-        }
+    val (backgroundColor, borderColor) = when (notification.type) {
+        NotificationType.CRITICAL -> Pair(Color(0xFFFFEBEE), Color(0xFFEF5350))
+        NotificationType.EXPIRING -> Pair(Warning500.copy(alpha = 0.05f), Warning500)
+        NotificationType.INFO -> Pair(Color(0xFFE3F2FD), Color(0xFF42A5F5))
+        NotificationType.RECIPE -> Pair(AI500.copy(alpha = 0.05f), AI500)
+        NotificationType.STREAK -> Pair(Primary500.copy(alpha = 0.05f), Primary500)
+        NotificationType.SAVED -> Pair(Primary500.copy(alpha = 0.05f), Primary500)
     }
 
     Surface(
@@ -1015,17 +1000,6 @@ fun NotificationCard(
                     .align(Alignment.CenterStart)
             )
             
-            // Unread indicator dot
-            if (!notification.read) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(Primary500, shape = CircleShape)
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-12).dp, y = 12.dp)
-                )
-            }
-            
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1043,40 +1017,53 @@ fun NotificationCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = notification.title,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = notification.title,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        // Urgency badge
+                        if (notification.daysUntilExpiry == 0) {
+                            Surface(
+                                color = Color(0xFFEF5350),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "TODAY",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Text(
                         text = notification.message,
                         fontSize = 12.sp,
                         color = Color.Gray,
                         lineHeight = 16.sp
                     )
-                    Text(
-                        text = notification.timestamp,
-                        fontSize = 12.sp,
-                        color = Color.Gray.copy(alpha = 0.7f)
-                    )
-                }
-                
-                // Action buttons
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (!notification.read) {
-                        IconButton(
-                            onClick = onMarkAsRead,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Text(text = "✓", fontSize = 16.sp, color = Color.Gray)
-                        }
-                    }
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(32.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(text = "🗑️", fontSize = 16.sp)
+                        Text(
+                            text = notification.timestamp,
+                            fontSize = 12.sp,
+                            color = Color.Gray.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = "Qty: ${notification.itemName}",
+                            fontSize = 11.sp,
+                            color = Primary500,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

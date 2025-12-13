@@ -88,8 +88,10 @@ fun AppNavGraph(
         }
         
         composable(Screen.Notifications.route) {
+            val pantryViewModel: PantryViewModel = viewModel()
             NotificationsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                viewModel = pantryViewModel
             )
         }
         

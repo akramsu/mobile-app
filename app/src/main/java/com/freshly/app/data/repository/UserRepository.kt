@@ -249,6 +249,7 @@ class UserRepository {
     
     private fun getSampleAchievements(): List<Achievement> {
         return listOf(
+            // TRACKING Achievements
             Achievement(
                 id = "first_item",
                 title = "First Step",
@@ -257,8 +258,40 @@ class UserRepository {
                 xpReward = 50,
                 isUnlocked = false,
                 unlockedDate = null,
-                category = AchievementCategory.TRACKING
+                category = AchievementCategory.TRACKING,
+                progress = 0,
+                target = 1,
+                rarity = com.freshly.app.data.model.AchievementRarity.COMMON,
+                unlockCondition = "Add 1 item to your pantry"
             ),
+            Achievement(
+                id = "pantry_manager",
+                title = "Pantry Manager",
+                description = "Track 25 different items",
+                iconName = "📦",
+                xpReward = 150,
+                isUnlocked = false,
+                category = AchievementCategory.TRACKING,
+                progress = 0,
+                target = 25,
+                rarity = com.freshly.app.data.model.AchievementRarity.RARE,
+                unlockCondition = "Add 25 items to your pantry"
+            ),
+            Achievement(
+                id = "scanner_pro",
+                title = "Photo Scanner Pro",
+                description = "Add 50 items using photo scan",
+                iconName = "📸",
+                xpReward = 200,
+                isUnlocked = false,
+                category = AchievementCategory.TRACKING,
+                progress = 0,
+                target = 50,
+                rarity = com.freshly.app.data.model.AchievementRarity.RARE,
+                unlockCondition = "Use camera to add 50 items"
+            ),
+            
+            // STREAK Achievements
             Achievement(
                 id = "week_streak",
                 title = "Week Warrior",
@@ -266,8 +299,40 @@ class UserRepository {
                 iconName = "🔥",
                 xpReward = 100,
                 isUnlocked = false,
-                category = AchievementCategory.STREAK
+                category = AchievementCategory.STREAK,
+                progress = 0,
+                target = 7,
+                rarity = com.freshly.app.data.model.AchievementRarity.COMMON,
+                unlockCondition = "Check the app for 7 days in a row"
             ),
+            Achievement(
+                id = "month_streak",
+                title = "Monthly Champion",
+                description = "Maintain a 30-day streak",
+                iconName = "💎",
+                xpReward = 300,
+                isUnlocked = false,
+                category = AchievementCategory.STREAK,
+                progress = 0,
+                target = 30,
+                rarity = com.freshly.app.data.model.AchievementRarity.EPIC,
+                unlockCondition = "Check the app for 30 days in a row"
+            ),
+            Achievement(
+                id = "year_streak",
+                title = "Legendary Keeper",
+                description = "Maintain a 365-day streak",
+                iconName = "👑",
+                xpReward = 1000,
+                isUnlocked = false,
+                category = AchievementCategory.STREAK,
+                progress = 0,
+                target = 365,
+                rarity = com.freshly.app.data.model.AchievementRarity.LEGENDARY,
+                unlockCondition = "Check the app for 1 year straight"
+            ),
+            
+            // SAVING Achievements
             Achievement(
                 id = "zero_waste",
                 title = "Zero Waste Hero",
@@ -275,8 +340,40 @@ class UserRepository {
                 iconName = "♻️",
                 xpReward = 200,
                 isUnlocked = false,
-                category = AchievementCategory.SAVING
+                category = AchievementCategory.SAVING,
+                progress = 0,
+                target = 7,
+                rarity = com.freshly.app.data.model.AchievementRarity.RARE,
+                unlockCondition = "Don't let any items expire for 7 days"
             ),
+            Achievement(
+                id = "money_saver",
+                title = "Money Saver",
+                description = "Prevent $100 worth of food waste",
+                iconName = "💰",
+                xpReward = 250,
+                isUnlocked = false,
+                category = AchievementCategory.SAVING,
+                progress = 0,
+                target = 100,
+                rarity = com.freshly.app.data.model.AchievementRarity.EPIC,
+                unlockCondition = "Save $100 by preventing food waste"
+            ),
+            Achievement(
+                id = "eco_warrior",
+                title = "Eco Warrior",
+                description = "Use all items before expiry 50 times",
+                iconName = "🌱",
+                xpReward = 300,
+                isUnlocked = false,
+                category = AchievementCategory.SAVING,
+                progress = 0,
+                target = 50,
+                rarity = com.freshly.app.data.model.AchievementRarity.EPIC,
+                unlockCondition = "Use 50 items before they expire"
+            ),
+            
+            // COOKING Achievements
             Achievement(
                 id = "chef_beginner",
                 title = "Home Chef",
@@ -284,25 +381,65 @@ class UserRepository {
                 iconName = "👨‍🍳",
                 xpReward = 150,
                 isUnlocked = false,
-                category = AchievementCategory.COOKING
+                category = AchievementCategory.COOKING,
+                progress = 0,
+                target = 10,
+                rarity = com.freshly.app.data.model.AchievementRarity.RARE,
+                unlockCondition = "Cook 10 recipes"
             ),
             Achievement(
-                id = "month_streak",
-                title = "Monthly Master",
-                description = "Maintain a 30-day streak",
+                id = "master_chef",
+                title = "Master Chef",
+                description = "Cook 50 different recipes",
                 iconName = "⭐",
+                xpReward = 400,
+                isUnlocked = false,
+                category = AchievementCategory.COOKING,
+                progress = 0,
+                target = 50,
+                rarity = com.freshly.app.data.model.AchievementRarity.EPIC,
+                unlockCondition = "Cook 50 different recipes"
+            ),
+            Achievement(
+                id = "recipe_explorer",
+                title = "Recipe Explorer",
+                description = "Try recipes from 5 different cuisines",
+                iconName = "🌍",
+                xpReward = 200,
+                isUnlocked = false,
+                category = AchievementCategory.COOKING,
+                progress = 0,
+                target = 5,
+                rarity = com.freshly.app.data.model.AchievementRarity.RARE,
+                unlockCondition = "Cook recipes from 5 cuisines"
+            ),
+            
+            // SPECIAL Achievements
+            Achievement(
+                id = "early_adopter",
+                title = "Early Adopter",
+                description = "Join during the first month",
+                iconName = "🚀",
                 xpReward = 500,
                 isUnlocked = false,
-                category = AchievementCategory.STREAK
+                category = AchievementCategory.SPECIAL,
+                progress = 0,
+                target = 1,
+                rarity = com.freshly.app.data.model.AchievementRarity.LEGENDARY,
+                unlockCondition = "Be among the first users"
             ),
             Achievement(
-                id = "scanner_pro",
-                title = "Scanner Pro",
-                description = "Add 50 items using photo scan",
-                iconName = "📸",
-                xpReward = 250,
+                id = "notification_master",
+                title = "Never Miss a Beat",
+                description = "Act on 20 expiry notifications",
+                iconName = "🔔",
+                xpReward = 150,
                 isUnlocked = false,
-                category = AchievementCategory.TRACKING
+                category = AchievementCategory.SPECIAL,
+                progress = 0,
+                target = 20,
+                rarity = com.freshly.app.data.model.AchievementRarity.RARE,
+                unlockCondition = "Respond to 20 notifications"
             )
         )
     }

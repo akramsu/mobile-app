@@ -69,7 +69,11 @@ data class Achievement(
     val xpReward: Int,
     val isUnlocked: Boolean = false,
     val unlockedDate: String? = null,
-    val category: AchievementCategory
+    val category: AchievementCategory,
+    val progress: Int = 0,
+    val target: Int = 1,
+    val rarity: AchievementRarity = AchievementRarity.COMMON,
+    val unlockCondition: String = ""
 ) : Parcelable {
     
     /**
@@ -84,7 +88,11 @@ data class Achievement(
             "xpReward" to xpReward,
             "isUnlocked" to isUnlocked,
             "unlockedDate" to unlockedDate,
-            "category" to category.name
+            "category" to category.name,
+            "progress" to progress,
+            "target" to target,
+            "rarity" to rarity.name,
+            "unlockCondition" to unlockCondition
         )
     }
     
@@ -105,7 +113,15 @@ data class Achievement(
                     AchievementCategory.valueOf(map["category"] as? String ?: "SPECIAL")
                 } catch (e: Exception) {
                     AchievementCategory.SPECIAL
-                }
+                },
+                progress = (map["progress"] as? Long)?.toInt() ?: 0,
+                target = (map["target"] as? Long)?.toInt() ?: 1,
+                rarity = try {
+                    AchievementRarity.valueOf(map["rarity"] as? String ?: "COMMON")
+                } catch (e: Exception) {
+                    AchievementRarity.COMMON
+                },
+                unlockCondition = map["unlockCondition"] as? String ?: ""
             )
         }
     }
@@ -113,4 +129,11 @@ data class Achievement(
 
 enum class AchievementCategory {
     TRACKING, SAVING, COOKING, STREAK, SPECIAL
+}
+
+enum class AchievementRarity {
+    COMMON,    // 50-100 XP
+    RARE,      // 150-250 XP
+    EPIC,      // 300-500 XP
+    LEGENDARY  // 500+ XP
 }
