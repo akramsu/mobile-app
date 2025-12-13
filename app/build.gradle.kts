@@ -96,6 +96,9 @@ dependencies {
     
     // Date/Time
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+    
+    // WorkManager for background tasks
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Swipe gestures
     implementation("me.saket.swipe:swipe:1.2.0")

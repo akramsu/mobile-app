@@ -1,23 +1,35 @@
 package com.freshly.app.ui.screens
 
+import android.Manifest
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+import coil.compose.AsyncImage
 import com.freshly.app.data.model.Category
 import com.freshly.app.data.model.PantryItem
 import com.freshly.app.ui.components.AppTopBar
@@ -27,19 +39,28 @@ import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.ui.theme.Warning500
 import com.freshly.app.viewmodel.PantryViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun AddItemScreen(
     viewModel: PantryViewModel,
     onBack: () -> Unit,
     onItemAdded: () -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Fridge") }
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
@@ -47,7 +68,40 @@ fun AddItemScreen(
     var expiryDate by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
     var unit by remember { mutableStateOf("items") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    
+    // Camera permission
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+    
+    // Create image URI for camera
+    val photoUri = remember {
+        val photoFile = File.createTempFile(
+            "IMG_${System.currentTimeMillis()}",
+            ".jpg",
+            context.cacheDir
+        )
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            photoFile
+        )
+    }
+    
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            imageUri = photoUri
+        }
+    }
+    
+    // Date picker state
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
     
     Scaffold(
         topBar = {
@@ -64,48 +118,95 @@ fun AddItemScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // AI Photo Card
+            // Photo Capture Section
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = AI500.copy(alpha = 0.05f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 2.dp,
-                                color = AI500,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Item Photo (Optional)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    
+                    if (imageUri != null) {
+                        // Show captured image
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.LightGray)
                         ) {
-                            Text(text = "📸", fontSize = 40.sp)
-                            Text(
-                                text = "AI Detect Photo",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AI500
+                            AsyncImage(
+                                model = imageUri,
+                                contentDescription = "Captured item",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                            Text(
-                                text = "Take a photo to auto-fill details",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Button(
-                                onClick = { /* TODO: Camera */ },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Primary500
-                                )
+                            
+                            // Re-take button
+                            IconButton(
+                                onClick = {
+                                    if (cameraPermissionState.status.isGranted) {
+                                        cameraLauncher.launch(photoUri)
+                                    } else {
+                                        cameraPermissionState.launchPermissionRequest()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .background(Color.White.copy(alpha = 0.9f), CircleShape)
                             ) {
-                                Text("Take Photo")
+                                Icon(
+                                    imageVector = Icons.Outlined.PhotoCamera,
+                                    contentDescription = "Re-take photo",
+                                    tint = Primary500
+                                )
+                            }
+                        }
+                    } else {
+                        // Show camera capture button
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clickable {
+                                    if (cameraPermissionState.status.isGranted) {
+                                        cameraLauncher.launch(photoUri)
+                                    } else {
+                                        cameraPermissionState.launchPermissionRequest()
+                                    }
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = AI500.copy(alpha = 0.05f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 2.dp,
+                                color = AI500.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.PhotoCamera,
+                                    contentDescription = "Take photo",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = AI500
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Tap to Take Photo",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AI500
+                                )
+                                Text(
+                                    text = "Capture your item",
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
                             }
                         }
                     }
@@ -201,7 +302,7 @@ fun AddItemScreen(
                 }
             }
             
-            // Expiry Date
+            // Expiry Date with Date Picker
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -211,15 +312,61 @@ fun AddItemScreen(
                     )
                     OutlinedTextField(
                         value = expiryDate,
-                        onValueChange = { expiryDate = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("mm/dd/yyyy") },
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
+                        placeholder = { Text("Select expiry date") },
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.CalendarToday,
+                                    contentDescription = "Select date",
+                                    tint = Primary500
+                                )
+                            }
+                        },
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color.LightGray,
-                            focusedBorderColor = Primary500
-                        )
+                            focusedBorderColor = Primary500,
+                            disabledBorderColor = Color.LightGray,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        enabled = false
                     )
+                }
+                
+                // Date Picker Dialog
+                if (showDatePicker) {
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    datePickerState.selectedDateMillis?.let { millis ->
+                                        val date = Date(millis)
+                                        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                        expiryDate = formatter.format(date)
+                                    }
+                                    showDatePicker = false
+                                }
+                            ) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDatePicker = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    ) {
+                        DatePicker(
+                            state = datePickerState,
+                            showModeToggle = false
+                        )
+                    }
                 }
             }
             
@@ -330,7 +477,7 @@ fun AddItemScreen(
                                         unit = unit,
                                         addedDate = purchaseDate,
                                         expiryDate = expiryDate,
-                                        imageUrl = null,
+                                        imageUrl = imageUri?.toString(),
                                         notes = null
                                     )
                                     viewModel.repository.addItem(newItem)
