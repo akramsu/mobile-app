@@ -34,6 +34,46 @@ data class PantryItem(
             else -> ExpiryStatus.FRESH
         }
     }
+    
+    /**
+     * Convert PantryItem to Firestore-compatible Map
+     */
+    fun toMap(): Map<String, Any?> {
+        return mapOf(
+            "id" to id,
+            "name" to name,
+            "category" to category.name,
+            "quantity" to quantity,
+            "unit" to unit,
+            "addedDate" to addedDate,
+            "expiryDate" to expiryDate,
+            "imageUrl" to imageUrl,
+            "notes" to notes
+        )
+    }
+    
+    companion object {
+        /**
+         * Create PantryItem from Firestore document
+         */
+        fun fromMap(map: Map<String, Any?>): PantryItem {
+            return PantryItem(
+                id = map["id"] as? String ?: "",
+                name = map["name"] as? String ?: "",
+                category = try {
+                    Category.valueOf(map["category"] as? String ?: "PANTRY")
+                } catch (e: Exception) {
+                    Category.PANTRY
+                },
+                quantity = (map["quantity"] as? Long)?.toInt() ?: 1,
+                unit = map["unit"] as? String ?: "unit",
+                addedDate = map["addedDate"] as? String ?: Clock.System.todayIn(TimeZone.currentSystemDefault()).toString(),
+                expiryDate = map["expiryDate"] as? String ?: Clock.System.todayIn(TimeZone.currentSystemDefault()).toString(),
+                imageUrl = map["imageUrl"] as? String,
+                notes = map["notes"] as? String
+            )
+        }
+    }
 }
 
 enum class Category {

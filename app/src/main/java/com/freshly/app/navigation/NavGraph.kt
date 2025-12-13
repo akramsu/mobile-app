@@ -1,12 +1,14 @@
 package com.freshly.app.navigation
 
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.freshly.app.ui.screens.*
+import com.freshly.app.viewmodel.PantryViewModel
 
 @Composable
 fun AppNavGraph(
@@ -18,6 +20,16 @@ fun AppNavGraph(
         navController = navController,
         startDestination = startDestination
     ) {
+        composable(Screen.AuthLoading.route) {
+            AuthLoadingScreen(
+                onAuthComplete = {
+                    navController.navigate(Screen.Splash.route) {
+                        popUpTo(Screen.AuthLoading.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
         composable(Screen.Splash.route) {
             SplashScreen(
                 onComplete = {
@@ -44,7 +56,9 @@ fun AppNavGraph(
         }
         
         composable(Screen.AddItem.route) {
+            val pantryViewModel: PantryViewModel = viewModel()
             AddItemScreen(
+                viewModel = pantryViewModel,
                 onBack = { navController.popBackStack() },
                 onItemAdded = { navController.popBackStack() }
             )
@@ -97,7 +111,16 @@ fun AppNavGraph(
                     navController.navigate(Screen.Splash.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                onOpenFirebaseDebug = {
+                    navController.navigate(Screen.FirebaseDebug.route)
                 }
+            )
+        }
+        
+        composable(Screen.FirebaseDebug.route) {
+            FirebaseDebugScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

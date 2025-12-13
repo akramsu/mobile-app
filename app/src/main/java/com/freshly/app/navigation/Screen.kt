@@ -1,6 +1,7 @@
 package com.freshly.app.navigation
 
 sealed class Screen(val route: String) {
+    object AuthLoading : Screen("auth_loading")
     object Splash : Screen("splash")
     object Onboarding : Screen("onboarding")
     object Main : Screen("main")
@@ -19,6 +20,7 @@ sealed class Screen(val route: String) {
     object Notifications : Screen("notifications")
     object Recommendations : Screen("recommendations")
     object Settings : Screen("settings")
+    object FirebaseDebug : Screen("firebase_debug")
 }
 
 sealed class MainTab(val route: String) {

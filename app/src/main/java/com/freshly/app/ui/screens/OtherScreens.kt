@@ -19,20 +19,24 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshly.app.data.model.Category
+import com.freshly.app.data.model.PantryItem
 import com.freshly.app.ui.components.AppTopBar
 import com.freshly.app.ui.components.PrimaryButton
 import com.freshly.app.ui.components.SecondaryButton
 import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.ui.theme.Warning500
+import com.freshly.app.viewmodel.PantryViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddItemScreen(
+    viewModel: PantryViewModel,
     onBack: () -> Unit,
     onItemAdded: () -> Unit
 ) {
@@ -43,6 +47,7 @@ fun AddItemScreen(
     var expiryDate by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
     var unit by remember { mutableStateOf("items") }
+    val scope = rememberCoroutineScope()
     
     Scaffold(
         topBar = {
@@ -311,7 +316,26 @@ fun AddItemScreen(
                         text = "Save Item",
                         onClick = {
                             if (name.isNotBlank() && expiryDate.isNotBlank()) {
-                                onItemAdded()
+                                scope.launch {
+                                    val newItem = PantryItem(
+                                        id = UUID.randomUUID().toString(),
+                                        name = name,
+                                        category = when(category) {
+                                            "Fridge" -> Category.FRIDGE
+                                            "Freezer" -> Category.FREEZER
+                                            "Pantry" -> Category.PANTRY
+                                            else -> Category.PANTRY
+                                        },
+                                        quantity = quantity.toIntOrNull() ?: 1,
+                                        unit = unit,
+                                        addedDate = purchaseDate,
+                                        expiryDate = expiryDate,
+                                        imageUrl = null,
+                                        notes = null
+                                    )
+                                    viewModel.repository.addItem(newItem)
+                                    onItemAdded()
+                                }
                             }
                         },
                         modifier = Modifier.weight(1f)
@@ -1189,7 +1213,8 @@ fun RecipeRecommendationCard(
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onLogout: () -> Unit = onBack
+    onLogout: () -> Unit = onBack,
+    onOpenFirebaseDebug: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesManager = remember { com.freshly.app.utils.PreferencesManager(context) }
@@ -1445,31 +1470,63 @@ fun SettingsScreen(
 
             // Action Buttons
             item {
-                Surface(
-                    onClick = onLogout,
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFF5F5),
-                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF5757)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Firebase Debug Button
+                    Surface(
+                        onClick = onOpenFirebaseDebug,
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF9D7DF2).copy(alpha = 0.1f),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF9D7DF2)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Logout,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = Color(0xFFFF5757)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Logout",
-                            color = Color(0xFFFF5757),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
+                        Row(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CloudDone,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = Color(0xFF9D7DF2)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Firebase Status",
+                                color = Color(0xFF9D7DF2),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    
+                    // Logout Button
+                    Surface(
+                        onClick = onLogout,
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFFF5F5),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFFF5757)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Logout,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = Color(0xFFFF5757)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Logout",
+                                color = Color(0xFFFF5757),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }

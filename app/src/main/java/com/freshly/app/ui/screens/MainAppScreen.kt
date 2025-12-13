@@ -25,7 +25,6 @@ fun MainAppScreen(
     val innerNavController = rememberNavController()
     
     Box(modifier = Modifier.fillMaxSize()) {
-        // Main content - extends to bottom to show background behind nav pill
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -49,7 +48,6 @@ fun MainAppScreen(
             }
         }
         
-        // Bottom navigation pill - floating over content with transparent background
         Box(
             modifier = Modifier
                 .fillMaxSize()

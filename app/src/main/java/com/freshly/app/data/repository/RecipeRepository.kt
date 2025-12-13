@@ -1,23 +1,124 @@
 package com.freshly.app.data.repository
 
+import android.util.Log
+import com.freshly.app.data.firebase.FirebaseManager
 import com.freshly.app.data.model.Ingredient
 import com.freshly.app.data.model.Recipe
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.tasks.await
+import java.util.*
 
 class RecipeRepository {
     
+    /**
+     * Generate recipes based on selected ingredients
+     * In real implementation, this would call an AI API
+     */
     suspend fun generateRecipes(selectedIngredients: List<String>): Flow<List<Recipe>> = flow {
         // Simulate API call with 800ms delay (matching animation)
         delay(800)
         emit(getSampleRecipes(selectedIngredients))
     }
     
-    fun getRecipeById(id: String): Recipe? {
-        return getSampleRecipes(emptyList()).find { it.id == id }
+    /**
+     * Get all saved recipes from Firestore
+     */
+    val savedRecipes: Flow<List<Recipe>> = callbackFlow {
+        val userId = FirebaseManager.userId
+        
+        if (userId.isEmpty()) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        
+        val listener = FirebaseManager.getRecipesCollection(userId)
+            .orderBy("title", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("RecipeRepository", "Error listening to recipes", error)
+                    return@addSnapshotListener
+                }
+                
+                if (snapshot != null) {
+                    val recipes = snapshot.documents.mapNotNull { doc ->
+                        doc.data?.let { Recipe.fromMap(it) }
+                    }
+                    trySend(recipes)
+                } else {
+                    trySend(emptyList())
+                }
+            }
+        
+        awaitClose { listener.remove() }
     }
     
+    /**
+     * Save recipe to Firestore
+     */
+    suspend fun saveRecipe(recipe: Recipe) {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return
+        
+        try {
+            FirebaseManager.getRecipesCollection(userId)
+                .document(recipe.id)
+                .set(recipe.toMap())
+                .await()
+            
+            Log.d("RecipeRepository", "Recipe saved: ${recipe.title}")
+        } catch (e: Exception) {
+            Log.e("RecipeRepository", "Error saving recipe", e)
+        }
+    }
+    
+    /**
+     * Delete recipe from Firestore
+     */
+    suspend fun deleteRecipe(recipeId: String) {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return
+        
+        try {
+            FirebaseManager.getRecipesCollection(userId)
+                .document(recipeId)
+                .delete()
+                .await()
+            
+            Log.d("RecipeRepository", "Recipe deleted: $recipeId")
+        } catch (e: Exception) {
+            Log.e("RecipeRepository", "Error deleting recipe", e)
+        }
+    }
+    
+    /**
+     * Get recipe by ID from Firestore
+     */
+    suspend fun getRecipeById(id: String): Recipe? {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return null
+        
+        return try {
+            val snapshot = FirebaseManager.getRecipesCollection(userId)
+                .document(id)
+                .get()
+                .await()
+            
+            snapshot.data?.let { Recipe.fromMap(it) }
+        } catch (e: Exception) {
+            Log.e("RecipeRepository", "Error getting recipe by ID", e)
+            null
+        }
+    }
+    
+    /**
+     * Get daily recipe suggestion (uses local sample data)
+     */
     fun getDailyRecipe(): Recipe {
         return getSampleRecipes(emptyList()).first()
     }
@@ -25,7 +126,7 @@ class RecipeRepository {
     private fun getSampleRecipes(matchedIngredients: List<String>): List<Recipe> {
         return listOf(
             Recipe(
-                id = "1",
+                id = UUID.randomUUID().toString(),
                 title = "Creamy Pasta Carbonara",
                 description = "Classic Italian pasta with eggs, cheese, and pancetta",
                 imageUrl = "",
@@ -50,7 +151,7 @@ class RecipeRepository {
                 tags = listOf("Italian", "Quick", "Dinner")
             ),
             Recipe(
-                id = "2",
+                id = UUID.randomUUID().toString(),
                 title = "Chicken Stir Fry",
                 description = "Quick and healthy Asian-inspired dish",
                 imageUrl = "",
@@ -75,7 +176,7 @@ class RecipeRepository {
                 tags = listOf("Asian", "Healthy", "Quick")
             ),
             Recipe(
-                id = "3",
+                id = UUID.randomUUID().toString(),
                 title = "Veggie Omelette",
                 description = "Fluffy eggs with fresh vegetables",
                 imageUrl = "",
