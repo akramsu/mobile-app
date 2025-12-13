@@ -38,6 +38,7 @@ import com.freshly.app.ui.components.SecondaryButton
 import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.ui.theme.Warning500
+import com.freshly.app.utils.TextExtractor
 import com.freshly.app.viewmodel.PantryViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -70,7 +71,10 @@ fun AddItemScreen(
     var unit by remember { mutableStateOf("items") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var isProcessingImage by remember { mutableStateOf(false) }
+    var extractionConfidence by remember { mutableStateOf(0f) }
     val scope = rememberCoroutineScope()
+    val textExtractor = remember { TextExtractor(context) }
     
     // Camera permission
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -89,12 +93,34 @@ fun AddItemScreen(
         )
     }
     
-    // Camera launcher
+    // Camera launcher with OCR processing
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success) {
             imageUri = photoUri
+            isProcessingImage = true
+            
+            // Process image with ML Kit OCR
+            scope.launch {
+                try {
+                    val extractedInfo = textExtractor.extractTextFromImage(photoUri)
+                    
+                    // Auto-fill form fields with extracted data
+                    extractedInfo.name?.let { name = it }
+                    extractedInfo.expiryDate?.let { expiryDate = it }
+                    extractedInfo.quantity?.let { quantity = it }
+                    extractedInfo.unit?.let { unit = it }
+                    extractedInfo.category?.let { category = it }
+                    extractionConfidence = extractedInfo.confidence
+                    
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    extractionConfidence = 0f
+                } finally {
+                    isProcessingImage = false
+                }
+            }
         }
     }
     
@@ -118,17 +144,17 @@ fun AddItemScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Photo Capture Section
+            // Photo Capture Section with Smart Text Extraction
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Item Photo (Optional)",
+                        text = "Scan Product Label 📸",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     
                     if (imageUri != null) {
-                        // Show captured image
+                        // Show captured image with processing overlay
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -138,12 +164,38 @@ fun AddItemScreen(
                         ) {
                             AsyncImage(
                                 model = imageUri,
-                                contentDescription = "Captured item",
+                                contentDescription = "Captured product label",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
                             
-                            // Re-take button
+                            // Processing overlay
+                            if (isProcessingImage) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.7f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = Primary500,
+                                            modifier = Modifier.size(36.dp)
+                                        )
+                                        Text(
+                                            text = "Scanning label...",
+                                            color = Color.White,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Re-scan button
                             IconButton(
                                 onClick = {
                                     if (cameraPermissionState.status.isGranted) {
@@ -159,9 +211,51 @@ fun AddItemScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.PhotoCamera,
-                                    contentDescription = "Re-take photo",
+                                    contentDescription = "Re-scan label",
                                     tint = Primary500
                                 )
+                            }
+                            
+                            // Confidence indicator
+                            if (!isProcessingImage && extractionConfidence > 0f) {
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(8.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = when {
+                                        extractionConfidence >= 0.7f -> Color(0xFF4CAF50).copy(alpha = 0.9f)
+                                        extractionConfidence >= 0.4f -> Color(0xFFFFC107).copy(alpha = 0.9f)
+                                        else -> Color(0xFFFF9800).copy(alpha = 0.9f)
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = when {
+                                                extractionConfidence >= 0.7f -> Icons.Outlined.CheckCircle
+                                                extractionConfidence >= 0.4f -> Icons.Outlined.Info
+                                                else -> Icons.Outlined.Warning
+                                            },
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = when {
+                                                extractionConfidence >= 0.7f -> "High confidence"
+                                                extractionConfidence >= 0.4f -> "Medium - verify info"
+                                                else -> "Low - check details"
+                                            },
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -191,23 +285,47 @@ fun AddItemScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.PhotoCamera,
-                                    contentDescription = "Take photo",
+                                    contentDescription = "Scan product",
                                     modifier = Modifier.size(48.dp),
                                     tint = AI500
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Tap to Take Photo",
+                                    text = "Tap to Scan Product Label",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = AI500
                                 )
                                 Text(
-                                    text = "Capture your item",
+                                    text = "Auto-fill details from packaging",
                                     fontSize = 12.sp,
                                     color = Color.Gray
                                 )
                             }
+                        }
+                    }
+                    
+                    // Info helper text
+                    if (imageUri == null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = null,
+                                tint = AI500.copy(alpha = 0.7f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Capture the product label to auto-fill name, expiry date, and more",
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                lineHeight = 14.sp
+                            )
                         }
                     }
                 }

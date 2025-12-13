@@ -210,23 +210,20 @@ fun HomeScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Item emoji/icon
-                            Text(
-                                text = when (item.category.name) {
-                                    "DAIRY" -> "🥛"
-                                    "FRUIT" -> "🫐"
-                                    "VEGETABLE" -> "🥬"
-                                    "MEAT" -> "🥩"
-                                    "GRAIN" -> "🍞"
-                                    else -> "🍽️"
-                                },
-                                fontSize = 36.sp
+                            // Item image with smart emoji
+                            ItemImage(
+                                imageUrl = item.imageUrl,
+                                name = item.name,
+                                category = item.category.name,
+                                size = 60.dp
                             )
                             
                             Text(
                                 text = item.name,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 2,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                             
                             // Expiry chip
