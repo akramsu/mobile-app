@@ -2,6 +2,8 @@ package com.freshly.app.navigation
 
 sealed class Screen(val route: String) {
     object AuthLoading : Screen("auth_loading")
+    object SignIn : Screen("sign_in")
+    object SignUp : Screen("sign_up")
     object Splash : Screen("splash")
     object Onboarding : Screen("onboarding")
     object Main : Screen("main")

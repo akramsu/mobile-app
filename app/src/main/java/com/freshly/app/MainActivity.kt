@@ -81,10 +81,10 @@ fun FreshlyApp() {
             val isAuthenticated = FirebaseManager.isAuthenticated
             
             startDestination = when {
-                // Not authenticated - show auth loading first
-                !isAuthenticated -> Screen.AuthLoading.route
-                // Authenticated but not onboarded - show splash/onboarding
-                !hasOnboarded -> Screen.Splash.route
+                // Not authenticated - show splash then sign in
+                !isAuthenticated -> Screen.Splash.route
+                // Authenticated but not onboarded - show onboarding
+                !hasOnboarded -> Screen.Onboarding.route
                 // Authenticated and onboarded - go directly to main
                 else -> Screen.Main.route
             }

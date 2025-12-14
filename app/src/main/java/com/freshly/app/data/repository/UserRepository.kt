@@ -233,6 +233,43 @@ class UserRepository {
         }
     }
     
+    /**
+     * Create new user document in Firestore after signup
+     */
+    suspend fun createNewUser(name: String, email: String) {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return
+        
+        try {
+            val newUser = User(
+                name = name,
+                email = email,
+                xp = 0,
+                level = 1,
+                streak = 0,
+                avatarUrl = null,
+                achievements = emptyList(),
+                dietaryRestrictions = emptyList(),
+                region = "US"
+            )
+            
+            FirebaseManager.getUserDocument(userId).set(newUser.toMap()).await()
+            
+            // Initialize achievements
+            val achievements = getSampleAchievements()
+            achievements.forEach { achievement ->
+                FirebaseManager.getAchievementsCollection(userId)
+                    .document(achievement.id)
+                    .set(achievement.toMap())
+                    .await()
+            }
+            
+            Log.d("UserRepository", "New user created successfully: $name")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error creating new user", e)
+        }
+    }
+    
     private fun getDefaultUser(): User {
         return User(
             name = "Fresh Foodie",

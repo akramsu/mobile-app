@@ -21,9 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshly.app.ui.components.AppTopBar
-import com.freshly.app.ui.components.PrimaryButton
 import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
+import com.freshly.app.viewmodel.AIAssistantViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class ChatMessage(
@@ -33,11 +34,17 @@ data class ChatMessage(
 )
 
 @Composable
-fun AIAssistantScreen() {
-    var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
+fun AIAssistantScreen(
+    viewModel: AIAssistantViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    val messages by viewModel.messages.collectAsState()
+    val insights by viewModel.insights.collectAsState()
+    val showInsights by viewModel.showInsights.collectAsState()
+    val isGeneratingInsights by viewModel.isLoadingInsights.collectAsState()
+    val isGeneratingResponse by viewModel.isGeneratingResponse.collectAsState()
+    val currentStreamingText by viewModel.currentStreamingText.collectAsState()
+    
     var inputText by remember { mutableStateOf("") }
-    var showInsights by remember { mutableStateOf(false) }
-    var isGeneratingInsights by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -85,13 +92,7 @@ fun AIAssistantScreen() {
                         if (!showInsights) {
                             Surface(
                                 onClick = {
-                                    isGeneratingInsights = true
-                                    // Simulate AI processing
-                                    scope.launch {
-                                        kotlinx.coroutines.delay(2000)
-                                        showInsights = true
-                                        isGeneratingInsights = false
-                                    }
+                                    viewModel.generateInsights()
                                 },
                                 shape = RoundedCornerShape(16.dp),
                                 color = Color.Transparent,
@@ -159,193 +160,176 @@ fun AIAssistantScreen() {
                                             modifier = Modifier.size(24.dp)
                                         )
                                         Text(
-                                            text = "Your Insights",
+                                            text = "Your AI Insights",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 16.sp,
                                             color = AI500
                                         )
                                     }
                                     
-                                    Text(
-                                        text = "🎉 Great progress! Your food waste dropped by 20% compared to last month.",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    
-                                    Text(
-                                        text = "You saved approximately $14 and reduced your environmental impact!",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                    )
-                                    
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Primary500.copy(alpha = 0.1f)
-                                    ) {
-                                        Text(
-                                            text = "💡 Tip: Use your expiring spinach and tomatoes in a salad today!",
-                                            modifier = Modifier.padding(12.dp),
-                                            fontSize = 14.sp,
-                                            color = Primary500,
-                                            fontWeight = FontWeight.Medium
-                                        )
+                                    // Display each insight
+                                    insights["achievement"]?.let { 
+                                        Text(it, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium) 
+                                    }
+                                    insights["tip"]?.let { 
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Primary500.copy(alpha = 0.1f)
+                                        ) {
+                                            Text(
+                                                text = it,
+                                                modifier = Modifier.padding(12.dp),
+                                                fontSize = 14.sp,
+                                                color = Primary500,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                    insights["savings"]?.let { 
+                                        Text(it, style = MaterialTheme.typography.bodyMedium) 
+                                    }
+                                    insights["environmental"]?.let { 
+                                        Text(it, style = MaterialTheme.typography.bodyMedium) 
+                                    }
+                                    insights["urgent"]?.let { 
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                                        ) {
+                                            Text(
+                                                text = it,
+                                                modifier = Modifier.padding(12.dp),
+                                                fontSize = 14.sp,
+                                                color = MaterialTheme.colorScheme.error,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
                                     
+                                    // Refresh button
                                     TextButton(
-                                        onClick = { 
-                                            showInsights = false
-                                        }
+                                        onClick = { viewModel.refreshInsights() },
+                                        modifier = Modifier.align(Alignment.End)
                                     ) {
-                                        Text("Refresh Insights", color = AI500)
+                                        Text("Refresh", color = AI500)
                                     }
                                 }
                             }
                         }
-                    }
-                }
-
-                // Chatbot Section Header
-                item {
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "💬",
-                            fontSize = 24.sp
+                        
+                        // Divider
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
                         )
+                        
+                        // Chat Section Header
                         Text(
-                            text = "Ask Me Anything",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "Chat with AI",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                    }
-                    
-                    // Suggestion chips
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(top = 12.dp)
-                    ) {
-                        SuggestionChip(
-                            "Give me a recipe using items I already have",
-                            onClick = {
-                                val suggestion = "Give me a recipe using items I already have"
-                                inputText = suggestion
-                                messages = messages + ChatMessage(suggestion, true)
-                                scope.launch {
-                                    kotlinx.coroutines.delay(1000)
-                                    messages = messages + ChatMessage(
-                                        "Based on your pantry, I recommend:\n\n🍝 Pasta Primavera\n\nUse: Tomatoes, Spinach, Ground Beef\n\nQuick recipe:\n1. Cook pasta\n2. Sauté vegetables with garlic\n3. Add ground beef\n4. Mix with pasta\n\nThis uses 3 items expiring soon!",
-                                        false
-                                    )
-                                    listState.animateScrollToItem(messages.size - 1)
+                        
+                        // Suggestion chips
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
+                            SuggestionChip(
+                                "Give me a recipe using items I already have",
+                                onClick = {
+                                    viewModel.sendSuggestion("Give me a recipe using items I already have")
+                                    scope.launch {
+                                        delay(300)
+                                        listState.animateScrollToItem(messages.size - 1)
+                                    }
                                 }
-                                inputText = ""
-                            }
-                        )
-                        SuggestionChip(
-                            "Which food will expire in the next 3 days?",
-                            onClick = {
-                                val suggestion = "Which food will expire in the next 3 days?"
-                                inputText = suggestion
-                                messages = messages + ChatMessage(suggestion, true)
-                                scope.launch {
-                                    kotlinx.coroutines.delay(1000)
-                                    messages = messages + ChatMessage(
-                                        "Here are items expiring in the next 3 days:\n\n⚠️ Tomorrow:\n• Blueberries (1 pint)\n• Yogurt (6 cups)\n\n⚠️ In 2 days:\n• Milk (1 gallon)\n• Spinach (1 bunch)\n• Tomatoes (4 count)\n\n⚠️ In 3 days:\n• Ground Beef (1 lb)\n• Bread (1 loaf)\n\nConsider using these items first!",
-                                        false
-                                    )
-                                    listState.animateScrollToItem(messages.size - 1)
+                            )
+                            SuggestionChip(
+                                "Which food will expire in the next 3 days?",
+                                onClick = {
+                                    viewModel.sendSuggestion("Which food will expire in the next 3 days?")
+                                    scope.launch {
+                                        delay(300)
+                                        listState.animateScrollToItem(messages.size - 1)
+                                    }
                                 }
-                                inputText = ""
-                            }
-                        )
-                        SuggestionChip(
-                            "How can I reduce food waste this month?",
-                            onClick = {
-                                val suggestion = "How can I reduce food waste this month?"
-                                inputText = suggestion
-                                messages = messages + ChatMessage(suggestion, true)
-                                scope.launch {
-                                    kotlinx.coroutines.delay(1000)
-                                    messages = messages + ChatMessage(
-                                        "Here are personalized tips to reduce waste:\n\n✅ Plan meals around expiring items\n✅ Freeze items before they expire\n✅ Use the Chef feature for recipe ideas\n✅ Check your pantry before shopping\n✅ Store produce properly (I can help!)\n\nYou're already doing great - keep it up!",
-                                        false
-                                    )
-                                    listState.animateScrollToItem(messages.size - 1)
+                            )
+                            SuggestionChip(
+                                "How can I reduce food waste this month?",
+                                onClick = {
+                                    viewModel.sendSuggestion("How can I reduce food waste this month?")
+                                    scope.launch {
+                                        delay(300)
+                                        listState.animateScrollToItem(messages.size - 1)
+                                    }
                                 }
-                                inputText = ""
-                            }
-                        )
+                            )
+                        }
                     }
                 }
 
-                // Chat messages
+                // Messages
                 items(messages) { message ->
                     ChatBubble(message)
                 }
+                
+                // Streaming response (current incomplete message)
+                if (isGeneratingResponse && currentStreamingText.isNotBlank()) {
+                    item {
+                        ChatBubble(ChatMessage(currentStreamingText, isUser = false))
+                    }
+                }
             }
 
-            // Input area
+            // Input field (at bottom) - positioned above bottom navigation
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 80.dp),
                 color = MaterialTheme.colorScheme.background,
-                shadowElevation = 0.dp
+                shadowElevation = 8.dp
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Bottom
                 ) {
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Ask about your pantry...") },
+                        placeholder = { Text("Ask me anything about your pantry...") },
                         shape = RoundedCornerShape(24.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AI500,
-                            unfocusedBorderColor = Color(0xFFE5E7EB)
-                        )
+                        maxLines = 3
                     )
-                    
-                    Surface(
+                    IconButton(
                         onClick = {
                             if (inputText.isNotBlank()) {
-                                val userMessage = inputText
-                                messages = messages + ChatMessage(userMessage, true)
+                                viewModel.sendMessage(inputText)
                                 inputText = ""
-                                
-                                // Simulate AI response
                                 scope.launch {
-                                    kotlinx.coroutines.delay(1500)
-                                    messages = messages + ChatMessage(
-                                        "I understand you're asking about: \"$userMessage\"\n\nI'm analyzing your pantry data to provide the best answer. This is a demo response - in a real app, I would use Gemini AI to give you personalized insights based on your actual food inventory!",
-                                        false
-                                    )
+                                    delay(300)
                                     listState.animateScrollToItem(messages.size - 1)
                                 }
                             }
                         },
-                        shape = CircleShape,
-                        color = if (inputText.isNotBlank()) AI500 else Color(0xFFE5E7EB),
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (inputText.isNotBlank()) Primary500 else Color.Gray
+                            ),
+                        enabled = inputText.isNotBlank()
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Send,
-                                contentDescription = "Send",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = "Send",
+                            tint = Color.White
+                        )
                     }
                 }
             }
@@ -354,24 +338,7 @@ fun AIAssistantScreen() {
 }
 
 @Composable
-fun SuggestionChip(text: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFFF3F4F6),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB))
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            fontSize = 13.sp,
-            color = Color(0xFF374151)
-        )
-    }
-}
-
-@Composable
-fun ChatBubble(message: ChatMessage) {
+private fun ChatBubble(message: ChatMessage) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
@@ -383,16 +350,35 @@ fun ChatBubble(message: ChatMessage) {
                 bottomStart = if (message.isUser) 16.dp else 4.dp,
                 bottomEnd = if (message.isUser) 4.dp else 16.dp
             ),
-            color = if (message.isUser) AI500 else Color(0xFFF3F4F6),
+            color = if (message.isUser) Primary500 else MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
             Text(
                 text = message.text,
                 modifier = Modifier.padding(12.dp),
-                color = if (message.isUser) Color.White else Color(0xFF1F2937),
-                fontSize = 14.sp,
-                lineHeight = 20.sp
+                color = if (message.isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 14.sp
             )
         }
+    }
+}
+
+@Composable
+private fun SuggestionChip(
+    text: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.wrapContentWidth()
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+        )
     }
 }

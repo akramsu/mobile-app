@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.freshly.app.ui.screens.*
+import com.freshly.app.ui.screens.auth.SignInScreen
+import com.freshly.app.ui.screens.auth.SignUpScreen
 import com.freshly.app.viewmodel.PantryViewModel
 
 @Composable
@@ -20,22 +22,38 @@ fun AppNavGraph(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable(Screen.AuthLoading.route) {
-            AuthLoadingScreen(
-                onAuthComplete = {
-                    navController.navigate(Screen.Splash.route) {
-                        popUpTo(Screen.AuthLoading.route) { inclusive = true }
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onComplete = {
+                    navController.navigate(Screen.SignIn.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
             )
         }
         
-        composable(Screen.Splash.route) {
-            SplashScreen(
-                onComplete = {
+        composable(Screen.SignIn.route) {
+            SignInScreen(
+                onSignInSuccess = {
                     navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
                     }
+                },
+                onNavigateToSignUp = {
+                    navController.navigate(Screen.SignUp.route)
+                }
+            )
+        }
+        
+        composable(Screen.SignUp.route) {
+            SignUpScreen(
+                onSignUpSuccess = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
+                    }
+                },
+                onNavigateToSignIn = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -110,6 +128,9 @@ fun AppNavGraph(
                     navController.popBackStack()
                 },
                 onLogout = {
+                    // Sign out from Firebase
+                    com.freshly.app.data.firebase.FirebaseManager.signOut()
+                    // Navigate to splash which will redirect to sign in
                     navController.navigate(Screen.Splash.route) {
                         popUpTo(0) { inclusive = true }
                     }

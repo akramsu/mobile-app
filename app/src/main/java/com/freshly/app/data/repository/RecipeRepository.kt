@@ -1,6 +1,7 @@
 package com.freshly.app.data.repository
 
 import android.util.Log
+import com.freshly.app.data.api.GeminiApiService
 import com.freshly.app.data.firebase.FirebaseManager
 import com.freshly.app.data.model.Ingredient
 import com.freshly.app.data.model.Recipe
@@ -15,14 +16,121 @@ import java.util.*
 
 class RecipeRepository {
     
+    private val geminiService = GeminiApiService()
+    private val recipeCache = mutableMapOf<String, Pair<List<Recipe>, Long>>()
+    private val cacheExpiryMs = 24 * 60 * 60 * 1000L // 24 hours
+    
     /**
-     * Generate recipes based on selected ingredients
-     * In real implementation, this would call an AI API
+     * Generate recipes using Gemini AI based on selected ingredients
+     * Includes caching and retry logic
      */
-    suspend fun generateRecipes(selectedIngredients: List<String>): Flow<List<Recipe>> = flow {
-        // Simulate API call with 800ms delay (matching animation)
-        delay(800)
-        emit(getSampleRecipes(selectedIngredients))
+    suspend fun generateRecipes(
+        selectedIngredients: List<String>,
+        dietaryPreferences: List<String> = emptyList(),
+        skillLevel: String = "Medium"
+    ): Flow<List<Recipe>> = flow {
+        // Check cache first
+        val cacheKey = buildCacheKey(selectedIngredients, dietaryPreferences, skillLevel)
+        val cached = getCachedRecipes(cacheKey)
+        if (cached != null) {
+            Log.d("RecipeRepository", "Using cached recipes for: $cacheKey")
+            emit(cached)
+            return@flow
+        }
+        
+        // Emit empty list to show loading state
+        emit(emptyList())
+        
+        // Try to generate recipes with retry logic
+        var attempts = 0
+        var lastError: Exception? = null
+        
+        while (attempts < 3) {
+            attempts++
+            
+            try {
+                Log.d("RecipeRepository", "Generating recipes (attempt $attempts/3)...")
+                
+                val result = geminiService.generateRecipes(
+                    selectedIngredients,
+                    dietaryPreferences,
+                    skillLevel
+                )
+                
+                if (result.isSuccess) {
+                    val recipes = result.getOrNull() ?: emptyList()
+                    
+                    // Cache the results
+                    cacheRecipes(cacheKey, recipes)
+                    
+                    emit(recipes)
+                    return@flow
+                } else {
+                    lastError = result.exceptionOrNull() as? Exception 
+                        ?: Exception("Unknown error")
+                    
+                    // Don't retry on rate limit errors
+                    if (lastError?.message?.contains("rate limit", ignoreCase = true) == true ||
+                        lastError?.message?.contains("quota", ignoreCase = true) == true) {
+                        break
+                    }
+                }
+                
+            } catch (e: Exception) {
+                Log.e("RecipeRepository", "Attempt $attempts failed", e)
+                lastError = e
+            }
+            
+            // Wait before retry (exponential backoff)
+            if (attempts < 3) {
+                delay(1000L * attempts)
+            }
+        }
+        
+        // All retries failed
+        throw lastError ?: Exception("Failed to generate recipes after $attempts attempts")
+    }
+    
+    /**
+     * Build cache key from parameters
+     */
+    private fun buildCacheKey(
+        ingredients: List<String>,
+        dietary: List<String>,
+        skill: String
+    ): String {
+        return (ingredients.sorted() + dietary.sorted() + skill).joinToString("|")
+    }
+    
+    /**
+     * Get cached recipes if not expired
+     */
+    private fun getCachedRecipes(key: String): List<Recipe>? {
+        val cached = recipeCache[key] ?: return null
+        val (recipes, timestamp) = cached
+        
+        return if (System.currentTimeMillis() - timestamp < cacheExpiryMs) {
+            recipes
+        } else {
+            recipeCache.remove(key)
+            null
+        }
+    }
+    
+    /**
+     * Cache recipes with timestamp
+     */
+    private fun cacheRecipes(key: String, recipes: List<Recipe>) {
+        recipeCache[key] = Pair(recipes, System.currentTimeMillis())
+        Log.d("RecipeRepository", "Cached ${recipes.size} recipes")
+    }
+    
+    /**
+     * Clear recipe cache
+     */
+    fun clearCache() {
+        recipeCache.clear()
+        Log.d("RecipeRepository", "Recipe cache cleared")
     }
     
     /**

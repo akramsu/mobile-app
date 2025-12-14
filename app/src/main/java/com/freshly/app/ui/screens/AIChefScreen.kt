@@ -24,7 +24,30 @@ fun AIChefScreen(
     val selectedItems by viewModel.selectedItems.collectAsState()
     val recipes by viewModel.recipes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     val scope = rememberCoroutineScope()
+    
+    // Show error dialog
+    errorMessage?.let { error ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissError() },
+            title = { Text("Recipe Generation Error") },
+            text = { Text(error) },
+            confirmButton = {
+                TextButton(onClick = { 
+                    viewModel.dismissError()
+                    viewModel.retryGeneration()
+                }) {
+                    Text("Retry")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissError() }) {
+                    Text("Dismiss")
+                }
+            }
+        )
+    }
     
     Scaffold(
         topBar = {
@@ -105,13 +128,11 @@ fun AIChefScreen(
                         .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp)
                 ) {
                     PrimaryButton(
-                        text = "Generate Recipes",
+                        text = if (isLoading) "Generating..." else "Generate Recipes",
                         onClick = {
-                            scope.launch {
-                                viewModel.generateRecipes()
-                            }
+                            viewModel.generateRecipes()
                         },
-                        enabled = selectedItems.isNotEmpty(),
+                        enabled = selectedItems.isNotEmpty() && !isLoading,
                         loading = isLoading
                     )
                 }
@@ -191,9 +212,15 @@ fun AIChefScreen(
                     ) {
                         CircularProgressIndicator(color = AI)
                         Text(
-                            text = "Generating recipes...",
+                            text = "Generating recipes with Gemini AI...",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = AI
+                            color = AI,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "This may take 10-30 seconds",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 }
