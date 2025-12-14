@@ -16,32 +16,13 @@ object GeminiPromptBuilder {
         skillLevel: String = "Medium"
     ): String {
         val ingredientList = ingredients.joinToString(", ")
-        val dietary = if (dietaryPreferences.isNotEmpty()) {
-            "\nDietary restrictions: ${dietaryPreferences.joinToString(", ")}"
-        } else ""
+        val dietary = if (dietaryPreferences.isNotEmpty()) " ${dietaryPreferences.joinToString(", ")}" else ""
         
         return """
-Create 3 recipes using: $ingredientList
-Skill: $skillLevel$dietary
-
-Return ONLY valid JSON array:
-[{
-  "title": "Recipe Name",
-  "description": "Brief description",
-  "cookTime": 30,
-  "servings": 4,
-  "difficulty": "Easy",
-  "ingredients": [
-    {"name": "Item", "amount": "200g", "isMatched": true}
-  ],
-  "steps": ["Step 1", "Step 2"],
-  "tags": ["Tag1", "Tag2"]
-}]
-
-Rules:
-- isMatched=true for listed ingredients only
-- 4-6 steps per recipe
-- Vary difficulty: Easy, Medium, Hard
+2 recipes: $ingredientList$dietary
+JSON:
+[{"title":"","description":"","cookTime":25,"servings":2,"difficulty":"Easy","ingredients":[{"name":"","amount":"","isMatched":true}],"steps":[""],"tags":[""]}]
+3 steps max, brief
         """.trimIndent()
     }
     

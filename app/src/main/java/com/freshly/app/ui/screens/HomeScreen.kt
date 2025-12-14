@@ -292,47 +292,63 @@ fun HomeScreen(
             }
         }
         
-        // Recipe Card (AI-styled)
+        // Recommended Recipes Section
         item {
-            Surface(
-                onClick = { onRecipeClick("pasta-primavera") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                border = androidx.compose.foundation.BorderStroke(2.dp, AI500)
-            ) {
-                Column {
-                    // Recipe image area with gradient
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(AI500, Color(0xFF7C3AED))
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
+            Text(
+                text = "Recommended Recipes",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        
+        item {
+            val recommendedRecipes = remember {
+                listOf(
+                    Triple("pasta-primavera", "Pasta Primavera", "🍝"),
+                    Triple("chicken-teriyaki-bowl", "Chicken Teriyaki Bowl", "🍗"),
+                    Triple("greek-salad-wrap", "Greek Salad Wrap", "🥙"),
+                    Triple("berry-smoothie-bowl", "Berry Smoothie Bowl", "🫐")
+                )
+            }
+            
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                recommendedRecipes.forEach { (id, title, emoji) ->
+                    Surface(
+                        onClick = { onRecipeClick(id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(2.dp, AI500)
                     ) {
-                        Text(text = "🍝", fontSize = 60.sp)
-                    }
-                    
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Pasta Primavera",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Perfect for using up your vegetables",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Chip(text = "Tomatoes", variant = "ai")
-                            Chip(text = "Pasta", variant = "fresh")
+                        Column {
+                            // Recipe image area with gradient
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(160.dp)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(AI500, Color(0xFF7C3AED))
+                                        )
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = emoji, fontSize = 60.sp)
+                            }
+                            
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Perfect for your pantry items",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
                         }
                     }
                 }

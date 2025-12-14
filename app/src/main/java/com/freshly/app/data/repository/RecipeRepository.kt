@@ -20,6 +20,9 @@ class RecipeRepository {
     private val recipeCache = mutableMapOf<String, Pair<List<Recipe>, Long>>()
     private val cacheExpiryMs = 24 * 60 * 60 * 1000L // 24 hours
     
+    // Cache for AI-generated recipes by ID
+    private val generatedRecipeCache = mutableMapOf<String, Recipe>()
+    
     /**
      * Generate recipes using Gemini AI based on selected ingredients
      * Includes caching and retry logic
@@ -62,6 +65,12 @@ class RecipeRepository {
                     
                     // Cache the results
                     cacheRecipes(cacheKey, recipes)
+                    
+                    // Cache each recipe by ID for navigation
+                    recipes.forEach { recipe ->
+                        generatedRecipeCache[recipe.id] = recipe
+                        Log.d("RecipeRepository", "Cached generated recipe: ${recipe.id} - ${recipe.title}")
+                    }
                     
                     emit(recipes)
                     return@flow
@@ -208,8 +217,25 @@ class RecipeRepository {
      * Get recipe by ID from Firestore
      */
     suspend fun getRecipeById(id: String): Recipe? {
+        // First check AI-generated recipe cache
+        generatedRecipeCache[id]?.let { 
+            Log.d("RecipeRepository", "Found recipe in generated cache: $id")
+            return it 
+        }
+        
+        // Then check static recommended recipes
+        val staticRecipe = getRecommendedRecipes().find { it.id == id }
+        if (staticRecipe != null) {
+            Log.d("RecipeRepository", "Found recipe in static list: $id")
+            return staticRecipe
+        }
+        
+        // Finally try to get from Firebase
         val userId = FirebaseManager.userId
-        if (userId.isEmpty()) return null
+        if (userId.isEmpty()) {
+            Log.w("RecipeRepository", "No user ID, cannot fetch from Firebase")
+            return null
+        }
         
         return try {
             val snapshot = FirebaseManager.getRecipesCollection(userId)
@@ -217,11 +243,22 @@ class RecipeRepository {
                 .get()
                 .await()
             
-            snapshot.data?.let { Recipe.fromMap(it) }
+            snapshot.data?.let { 
+                Log.d("RecipeRepository", "Found recipe in Firebase: $id")
+                Recipe.fromMap(it) 
+            }
         } catch (e: Exception) {
-            Log.e("RecipeRepository", "Error getting recipe by ID", e)
+            Log.e("RecipeRepository", "Error getting recipe by ID: $id", e)
             null
         }
+    }
+    
+    /**
+     * Clear the generated recipe cache (useful when user logs out or wants fresh recipes)
+     */
+    fun clearGeneratedRecipeCache() {
+        generatedRecipeCache.clear()
+        Log.d("RecipeRepository", "Cleared generated recipe cache")
     }
     
     /**
@@ -229,6 +266,131 @@ class RecipeRepository {
      */
     fun getDailyRecipe(): Recipe {
         return getSampleRecipes(emptyList()).first()
+    }
+    
+    /**
+     * Get static recommended recipes for home screen
+     */
+    fun getRecommendedRecipes(): List<Recipe> {
+        return listOf(
+            Recipe(
+                id = "pasta-primavera",
+                title = "Pasta Primavera",
+                description = "Perfect for using up your vegetables. Fresh seasonal veggies with pasta in a light garlic sauce.",
+                imageUrl = "🍝",
+                cookTime = 25,
+                servings = 4,
+                difficulty = "Easy",
+                ingredients = listOf(
+                    Ingredient("Pasta", "400g", true),
+                    Ingredient("Cherry tomatoes", "200g", true),
+                    Ingredient("Bell peppers", "2", true),
+                    Ingredient("Zucchini", "1", true),
+                    Ingredient("Garlic", "3 cloves", false),
+                    Ingredient("Olive oil", "3 tbsp", false),
+                    Ingredient("Parmesan cheese", "50g", false),
+                    Ingredient("Fresh basil", "handful", false)
+                ),
+                steps = listOf(
+                    "Bring a large pot of salted water to boil and cook pasta according to package directions",
+                    "While pasta cooks, dice bell peppers and zucchini into bite-sized pieces",
+                    "Heat olive oil in a large pan over medium heat and sauté minced garlic for 1 minute",
+                    "Add bell peppers and zucchini, cook for 5-6 minutes until tender",
+                    "Add halved cherry tomatoes and cook for 2 more minutes",
+                    "Drain pasta and add to the vegetable mixture, toss well",
+                    "Season with salt and pepper, top with grated Parmesan and fresh basil",
+                    "Serve immediately while hot"
+                ),
+                tags = listOf("Italian", "Vegetarian", "Quick")
+            ),
+            Recipe(
+                id = "chicken-teriyaki-bowl",
+                title = "Chicken Teriyaki Bowl",
+                description = "Sweet and savory Japanese-inspired rice bowl with tender chicken and vegetables.",
+                imageUrl = "🍗",
+                cookTime = 30,
+                servings = 3,
+                difficulty = "Easy",
+                ingredients = listOf(
+                    Ingredient("Chicken breast", "500g", true),
+                    Ingredient("Rice", "2 cups", true),
+                    Ingredient("Broccoli", "200g", true),
+                    Ingredient("Carrots", "2", true),
+                    Ingredient("Soy sauce", "4 tbsp", false),
+                    Ingredient("Honey", "2 tbsp", false),
+                    Ingredient("Ginger", "1 inch", false),
+                    Ingredient("Sesame seeds", "1 tbsp", false)
+                ),
+                steps = listOf(
+                    "Cook rice according to package directions and keep warm",
+                    "Cut chicken into bite-sized pieces and season with salt",
+                    "Mix soy sauce, honey, and grated ginger to make teriyaki sauce",
+                    "Heat oil in a large pan and cook chicken until golden brown",
+                    "Add broccoli florets and sliced carrots, stir-fry for 5 minutes",
+                    "Pour teriyaki sauce over chicken and vegetables, cook for 2 minutes",
+                    "Serve chicken and vegetables over rice, garnish with sesame seeds"
+                ),
+                tags = listOf("Asian", "Healthy", "Dinner")
+            ),
+            Recipe(
+                id = "greek-salad-wrap",
+                title = "Greek Salad Wrap",
+                description = "Fresh Mediterranean flavors wrapped in a soft tortilla. Light, healthy, and delicious.",
+                imageUrl = "🥙",
+                cookTime = 15,
+                servings = 2,
+                difficulty = "Easy",
+                ingredients = listOf(
+                    Ingredient("Tortilla wraps", "2 large", false),
+                    Ingredient("Romaine lettuce", "2 cups", true),
+                    Ingredient("Cucumber", "1", true),
+                    Ingredient("Tomatoes", "2", true),
+                    Ingredient("Red onion", "1/4", true),
+                    Ingredient("Feta cheese", "100g", false),
+                    Ingredient("Olives", "1/4 cup", false),
+                    Ingredient("Greek yogurt", "3 tbsp", false),
+                    Ingredient("Lemon juice", "1 tbsp", false)
+                ),
+                steps = listOf(
+                    "Chop lettuce, dice cucumber and tomatoes, thinly slice red onion",
+                    "Mix Greek yogurt with lemon juice to make the sauce",
+                    "Warm tortillas in a dry pan for 30 seconds each side",
+                    "Spread yogurt sauce on each tortilla",
+                    "Layer lettuce, cucumber, tomatoes, onion, crumbled feta, and olives",
+                    "Roll up tightly, tucking in the sides as you go",
+                    "Cut in half diagonally and serve immediately"
+                ),
+                tags = listOf("Mediterranean", "Vegetarian", "Lunch")
+            ),
+            Recipe(
+                id = "berry-smoothie-bowl",
+                title = "Berry Smoothie Bowl",
+                description = "Nutritious and colorful breakfast bowl packed with antioxidants and fresh fruits.",
+                imageUrl = "🫐",
+                cookTime = 10,
+                servings = 2,
+                difficulty = "Easy",
+                ingredients = listOf(
+                    Ingredient("Frozen berries", "2 cups", true),
+                    Ingredient("Banana", "1", true),
+                    Ingredient("Greek yogurt", "1 cup", true),
+                    Ingredient("Honey", "1 tbsp", false),
+                    Ingredient("Granola", "1/4 cup", false),
+                    Ingredient("Fresh berries", "handful", false),
+                    Ingredient("Chia seeds", "1 tbsp", false),
+                    Ingredient("Almond slices", "2 tbsp", false)
+                ),
+                steps = listOf(
+                    "Add frozen berries, banana, yogurt, and honey to a blender",
+                    "Blend until smooth and thick (add a splash of milk if too thick)",
+                    "Pour into two bowls",
+                    "Top with granola, fresh berries, chia seeds, and almond slices",
+                    "Arrange toppings in sections for a beautiful presentation",
+                    "Serve immediately while cold"
+                ),
+                tags = listOf("Breakfast", "Healthy", "Vegan")
+            )
+        )
     }
     
     private fun getSampleRecipes(matchedIngredients: List<String>): List<Recipe> {

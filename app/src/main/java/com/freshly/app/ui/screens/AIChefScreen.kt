@@ -208,19 +208,28 @@ fun AIChefScreen(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        CircularProgressIndicator(color = AI)
-                        Text(
-                            text = "Generating recipes with Gemini AI...",
-                            style = MaterialTheme.typography.bodyLarge,
+                        CircularProgressIndicator(
                             color = AI,
-                            fontWeight = FontWeight.SemiBold
+                            strokeWidth = 4.dp,
+                            modifier = Modifier.size(56.dp)
                         )
                         Text(
-                            text = "This may take 10-30 seconds",
+                            text = "✨ Creating Your Recipes",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = AI,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Creating 2 personalized recipes...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = "Takes 10-20 seconds",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                     }
                 }

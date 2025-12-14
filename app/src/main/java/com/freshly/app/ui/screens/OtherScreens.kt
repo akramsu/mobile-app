@@ -641,30 +641,46 @@ fun RecipeDetailScreen(
     recipeId: String,
     onBack: () -> Unit
 ) {
-    val recipe = RecipeDetail(
-        name = "Creamy Blueberry Pancakes",
-        time = 20,
-        difficulty = "Easy",
-        servings = 2,
-        rating = 4.8f,
-        reviews = 124,
-        image = "🥞",
-        ingredients = listOf(
-            Ingredient("Flour", 1, "cup", true),
-            Ingredient("Milk", 1, "cup", true),
-            Ingredient("Blueberries", 1, "cup", true),
-            Ingredient("Eggs", 2, "whole", true),
-            Ingredient("Vanilla", 1, "tsp", false)
-        ),
-        steps = listOf(
-            RecipeStep(1, "Combine 1 cup flour, 2 tbsp sugar, 2 tsp baking powder"),
-            RecipeStep(2, "Mix 1 cup milk with 2 eggs and 1 tsp vanilla"),
-            RecipeStep(3, "Fold wet ingredients into dry, do not overmix"),
-            RecipeStep(4, "Gently fold in 1 cup fresh blueberries"),
-            RecipeStep(5, "Cook on buttered griddle until golden brown")
-        ),
-        tips = "Use fresh blueberries for best flavor. Cook on medium heat to prevent burning."
-    )
+    val recipeRepository = remember { com.freshly.app.data.repository.RecipeRepository() }
+    var recipe by remember { mutableStateOf<com.freshly.app.data.model.Recipe?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(recipeId) {
+        isLoading = true
+        recipe = recipeRepository.getRecipeById(recipeId)
+        isLoading = false
+    }
+    
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+    
+    if (recipe == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Recipe not found")
+                PrimaryButton(
+                    text = "Go Back",
+                    onClick = onBack
+                )
+            }
+        }
+        return
+    }
+    
+    val currentRecipe = recipe!!
 
     Column(modifier = Modifier.fillMaxSize()) {
         // App Top Bar
@@ -694,7 +710,7 @@ fun RecipeDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = recipe.image,
+                        text = currentRecipe.imageUrl.ifEmpty { "🍽️" },
                         fontSize = 72.sp
                     )
                 }
@@ -709,48 +725,62 @@ fun RecipeDetailScreen(
                     // Title & Meta
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = recipe.name,
+                            text = currentRecipe.title,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        Text(
+                            text = currentRecipe.description,
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            lineHeight = 20.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Text(
-                                text = "⏱️ ${recipe.time} min",
+                                text = "⏱️ ${currentRecipe.cookTime} min",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
                             Text(
-                                text = "📊 ${recipe.difficulty}",
+                                text = "📊 ${currentRecipe.difficulty}",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
                             Text(
-                                text = "👥 ${recipe.servings} servings",
+                                text = "👥 ${currentRecipe.servings} servings",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
                         }
                     }
-
-                    // Rating
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "★ ${recipe.rating}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFFB547)
-                        )
-                        Text(
-                            text = "(${recipe.reviews} reviews)",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
+                    
+                    // Tags
+                    if (currentRecipe.tags.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            currentRecipe.tags.take(3).forEach { tag ->
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = AI500.copy(alpha = 0.1f)
+                                ) {
+                                    Text(
+                                        text = tag,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        fontSize = 12.sp,
+                                        color = AI500,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     // Ingredients Section
@@ -761,11 +791,11 @@ fun RecipeDetailScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            recipe.ingredients.forEach { ingredient ->
+                            currentRecipe.ingredients.forEach { ingredient ->
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (ingredient.available) 
+                                    color = if (ingredient.isMatched) 
                                         Primary500.copy(alpha = 0.1f) 
                                     else 
                                         Color(0xFFF5F5F5)
@@ -773,21 +803,29 @@ fun RecipeDetailScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(8.dp),
+                                            .padding(12.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = if (ingredient.available) "✓" else "○",
+                                            text = if (ingredient.isMatched) "✓" else "○",
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (ingredient.available) Primary500 else Color.Gray
+                                            color = if (ingredient.isMatched) Primary500 else Color.Gray
                                         )
-                                        Text(
-                                            text = "${ingredient.quantity} ${ingredient.unit} ${ingredient.name}",
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = ingredient.name,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = ingredient.amount,
+                                                fontSize = 12.sp,
+                                                color = Color.Gray
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -802,7 +840,7 @@ fun RecipeDetailScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            recipe.steps.forEach { step ->
+                            currentRecipe.steps.forEachIndexed { index, step ->
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
@@ -817,19 +855,19 @@ fun RecipeDetailScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(24.dp)
+                                                .size(28.dp)
                                                 .background(Primary500, shape = CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = step.number.toString(),
+                                                text = (index + 1).toString(),
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White
                                             )
                                         }
                                         Text(
-                                            text = step.instruction,
+                                            text = step,
                                             fontSize = 14.sp,
                                             color = MaterialTheme.colorScheme.onSurface,
                                             lineHeight = 20.sp,
@@ -840,36 +878,45 @@ fun RecipeDetailScreen(
                             }
                         }
                     }
+                    
+                    // Save Recipe Button
+                    PrimaryButton(
+                        text = "Save Recipe",
+                        onClick = { /* TODO: Implement save functionality */ },
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                    // Chef's Tips
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .width(4.dp)
-                                    .height(60.dp)
-                                    .background(AI500, shape = RoundedCornerShape(2.dp))
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "💡 CHEF'S TIPS",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = AI500,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                    // Chef's Tips (if available)
+                    currentRecipe.description.takeIf { it.isNotEmpty() }?.let { tips ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
+                        ) {
+                            Row(modifier = Modifier.padding(16.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(4.dp)
+                                        .height(60.dp)
+                                        .background(AI500, shape = RoundedCornerShape(2.dp))
                                 )
-                                Text(
-                                    text = recipe.tips,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    lineHeight = 20.sp
-                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "💡 ABOUT THIS RECIPE",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AI500,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                    Text(
+                                        text = tips,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        lineHeight = 20.sp
+                                    )
+                                }
                             }
                         }
                     }

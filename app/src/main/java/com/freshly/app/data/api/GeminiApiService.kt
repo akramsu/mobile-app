@@ -32,10 +32,10 @@ class GeminiApiService {
         modelName = MODEL_NAME,
         apiKey = BuildConfig.GEMINI_API_KEY,
         generationConfig = generationConfig {
-            temperature = 0.8f      // Creative but controlled
-            topK = 40
-            topP = 0.95f
-            maxOutputTokens = 4096  // Increased for 3 detailed recipes
+            temperature = 0.7f      // Less creative = faster
+            topK = 20               // Reduced for speed
+            topP = 0.9f
+            maxOutputTokens = 2048  // Reduced for 2 shorter recipes
         }
     )
     
