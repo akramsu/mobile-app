@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AIChefScreen(
-    onRecipeClick: (String) -> Unit = {},
+    onRecipeClick: (String, Boolean) -> Unit = { _, _ -> },
     viewModel: AIChefViewModel = viewModel()
 ) {
     val pantryItems by viewModel.pantryItems.collectAsState()
@@ -164,7 +164,7 @@ fun AIChefScreen(
                     items(recipes) { recipe ->
                         FreshlyCard(
                             modifier = Modifier.fillMaxWidth(),
-                            onClick = { onRecipeClick(recipe.id) }
+                            onClick = { onRecipeClick(recipe.id, true) }
                         ) {
                             Text(
                                 text = recipe.title,
@@ -222,7 +222,7 @@ fun AIChefScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Creating 2 personalized recipes...",
+                            text = "Creating personalized recipes...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )

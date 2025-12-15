@@ -261,6 +261,41 @@ class GeminiApiService {
     fun getDailyUsagePercentage(): Int {
         return rateLimiter.getDailyUsagePercentage()
     }
+    
+    /**
+     * Generate detailed recipe content
+     */
+    suspend fun generateDetailedRecipe(
+        title: String,
+        ingredients: List<String>
+    ): Result<String> {
+        return try {
+            if (!rateLimiter.canMakeRequest()) {
+                val (dailyRemaining, minuteRemaining) = rateLimiter.getRemainingRequests()
+                val message = if (minuteRemaining == 0) {
+                    "Please wait a minute before trying again."
+                } else {
+                    "Daily limit reached. Try again tomorrow."
+                }
+                return Result.failure(RateLimitException(message))
+            }
+            
+            val prompt = GeminiPromptBuilder.buildDetailedRecipePrompt(title, ingredients)
+            Log.d(TAG, "Generating detailed recipe for: $title")
+            
+            rateLimiter.recordRequest()
+            
+            val response = recipeModel.generateContent(prompt)
+            val text = response.text ?: ""
+            
+            Log.d(TAG, "Detailed recipe generated successfully")
+            Result.success(text)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating detailed recipe", e)
+            Result.failure(e)
+        }
+    }
 }
 
 /**

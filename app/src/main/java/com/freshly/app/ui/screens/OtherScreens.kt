@@ -637,18 +637,167 @@ fun ItemDetailsScreen(
 }
 
 @Composable
+private fun AIRecipeContentCard(aiContent: String) {
+    val parsedData = remember(aiContent) {
+        try {
+            val jsonContent = aiContent
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+                .let {
+                    val start = it.indexOf('{')
+                    val end = it.lastIndexOf('}')
+                    if (start >= 0 && end > start) it.substring(start, end + 1) else it
+                }
+            
+            val json = org.json.JSONObject(jsonContent)
+            Triple(
+                json.optString("description", ""),
+                json.optJSONArray("steps"),
+                json.optJSONArray("tips")
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    if (parsedData != null) {
+        val (description, stepsArray, tipsArray) = parsedData
+        
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = AI500.copy(alpha = 0.05f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, AI500.copy(alpha = 0.2f))
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "✨",
+                        fontSize = 20.sp
+                    )
+                    Text(
+                        text = "AI Recipe Guide",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AI500
+                    )
+                }
+                
+                if (description.isNotEmpty()) {
+                    Text(
+                        text = description,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 20.sp
+                    )
+                }
+                
+                if (stepsArray != null && stepsArray.length() > 0) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Quick Steps:",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        for (i in 0 until stepsArray.length()) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "${i + 1}.",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AI500
+                                )
+                                Text(
+                                    text = stepsArray.getString(i),
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    lineHeight = 18.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                if (tipsArray != null && tipsArray.length() > 0) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "💡 Tips:",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        for (i in 0 until tipsArray.length()) {
+                            Text(
+                                text = "• ${tipsArray.getString(i)}",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        // Fallback if JSON parsing fails
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = AI500.copy(alpha = 0.05f)
+        ) {
+            Text(
+                text = aiContent,
+                modifier = Modifier.padding(16.dp),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+@Composable
 fun RecipeDetailScreen(
     recipeId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    generateAIContent: Boolean = false
 ) {
     val recipeRepository = remember { com.freshly.app.data.repository.RecipeRepository() }
+    val geminiService = remember { com.freshly.app.data.api.GeminiApiService() }
     var recipe by remember { mutableStateOf<com.freshly.app.data.model.Recipe?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var aiGeneratedContent by remember { mutableStateOf<String?>(null) }
+    var isGeneratingAI by remember { mutableStateOf(false) }
     
     LaunchedEffect(recipeId) {
         isLoading = true
         recipe = recipeRepository.getRecipeById(recipeId)
         isLoading = false
+        
+        // If generateAIContent is true and recipe is found, generate AI content
+        if (generateAIContent && recipe != null) {
+            isGeneratingAI = true
+            val ingredients = recipe!!.matchedIngredients.ifEmpty { 
+                recipe!!.ingredients.map { it.name }
+            }
+            val result = geminiService.generateDetailedRecipe(
+                recipe!!.title,
+                ingredients
+            )
+            if (result.isSuccess) {
+                aiGeneratedContent = result.getOrNull()
+            }
+            isGeneratingAI = false
+        }
     }
     
     if (isLoading) {
@@ -780,6 +929,37 @@ fun RecipeDetailScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                    
+                    // AI-Generated Content Section
+                    if (generateAIContent) {
+                        if (isGeneratingAI) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                color = AI500.copy(alpha = 0.05f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = AI500,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Text(
+                                        text = "✨ AI is creating your recipe details...",
+                                        fontSize = 14.sp,
+                                        color = AI500,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        } else if (aiGeneratedContent != null) {
+                            AIRecipeContentCard(aiGeneratedContent!!)
                         }
                     }
 

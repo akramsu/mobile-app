@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.freshly.app.navigation.Screen
 import androidx.navigation.compose.rememberNavController
 import com.freshly.app.navigation.MainTab
 import com.freshly.app.ui.components.BottomNav
@@ -39,7 +40,9 @@ fun MainAppScreen(
                     onAddItem = { mainNavController.navigate("add_item") }
                 )
                 MainTab.AIChef.route -> AIChefScreen(
-                    onRecipeClick = { recipeId -> mainNavController.navigate("recipe_detail/$recipeId") }
+                    onRecipeClick = { recipeId, generateAI -> 
+                        mainNavController.navigate(Screen.RecipeDetail.createRoute(recipeId, generateAI))
+                    }
                 )
                 MainTab.AIAssistant.route -> AIAssistantScreen()
                 MainTab.Profile.route -> ProfileScreen(

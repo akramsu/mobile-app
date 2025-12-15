@@ -96,12 +96,20 @@ fun AppNavGraph(
         
         composable(
             route = Screen.RecipeDetail.route,
-            arguments = listOf(navArgument("recipeId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("recipeId") { type = NavType.StringType },
+                navArgument("generateAI") { 
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
         ) { backStackEntry ->
             val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
+            val generateAI = backStackEntry.arguments?.getBoolean("generateAI") ?: false
             RecipeDetailScreen(
                 recipeId = recipeId,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                generateAIContent = generateAI
             )
         }
         

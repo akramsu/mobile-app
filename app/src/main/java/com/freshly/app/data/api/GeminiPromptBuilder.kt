@@ -130,4 +130,26 @@ Requirements:
             }
         }
     }
+    
+    /**
+     * Build prompt for generating detailed recipe view
+     */
+    fun buildDetailedRecipePrompt(
+        title: String,
+        ingredients: List<String>
+    ): String {
+        return """
+Recipe: $title
+Ingredients: ${ingredients.joinToString(", ")}
+
+Generate brief recipe:
+- 2-3 sentence description
+- 3 simple steps
+- 2-3 cooking tips
+- cookTime (minutes)
+
+JSON:
+{"description":"","steps":[""],"tips":[""],"cookTime":25}
+        """.trimIndent()
+    }
 }

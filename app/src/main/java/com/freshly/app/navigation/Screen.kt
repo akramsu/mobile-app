@@ -16,8 +16,8 @@ sealed class Screen(val route: String) {
     object ItemDetails : Screen("item_details/{itemId}") {
         fun createRoute(itemId: String) = "item_details/$itemId"
     }
-    object RecipeDetail : Screen("recipe_detail/{recipeId}") {
-        fun createRoute(recipeId: String) = "recipe_detail/$recipeId"
+    object RecipeDetail : Screen("recipe_detail/{recipeId}?generateAI={generateAI}") {
+        fun createRoute(recipeId: String, generateAI: Boolean = false) = "recipe_detail/$recipeId?generateAI=$generateAI"
     }
     object Notifications : Screen("notifications")
     object Recommendations : Screen("recommendations")
