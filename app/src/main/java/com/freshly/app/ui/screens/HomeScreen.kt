@@ -43,6 +43,7 @@ fun HomeScreen(
 ) {
     val user by viewModel.user.collectAsState()
     val expiringItems by viewModel.expiringItems.collectAsState()
+    val recommendedRecipes by viewModel.recommendedRecipes.collectAsState()
     var selectedAction by remember { mutableStateOf("") }
     
     LazyColumn(
@@ -50,19 +51,52 @@ fun HomeScreen(
         contentPadding = PaddingValues(top = 40.dp, start = 16.dp, end = 16.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Greeting Section
+        // Greeting Section with Profile and Notifications
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "${DateUtils.getGreeting()}, ${user.name} 👋",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "You have ${expiringItems.size} items expiring today",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Profile Image
+                    ImageAvatar(
+                        imageUrl = user.avatarUrl,
+                        name = user.name ?: "User",
+                        size = 48.dp
+                    )
+                    
+                    // Greeting Text
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "${DateUtils.getGreeting()}, ${user.name} 👋",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "You have ${expiringItems.size} items expiring today",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                
+                // Notifications Icon
+                IconButton(
+                    onClick = onNotifications,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
         
@@ -302,19 +336,10 @@ fun HomeScreen(
         }
         
         item {
-            val recommendedRecipes = remember {
-                listOf(
-                    Triple("pasta-primavera", "Pasta Primavera", "🍝"),
-                    Triple("chicken-teriyaki-bowl", "Chicken Teriyaki Bowl", "🍗"),
-                    Triple("greek-salad-wrap", "Greek Salad Wrap", "🥙"),
-                    Triple("berry-smoothie-bowl", "Berry Smoothie Bowl", "🫐")
-                )
-            }
-            
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                recommendedRecipes.forEach { (id, title, emoji) ->
+                recommendedRecipes.forEach { recipe ->
                     Surface(
-                        onClick = { onRecipeClick(id) },
+                        onClick = { onRecipeClick(recipe.id) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surface,
@@ -333,12 +358,12 @@ fun HomeScreen(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = emoji, fontSize = 60.sp)
+                                Text(text = recipe.imageUrl, fontSize = 60.sp)
                             }
                             
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = title,
+                                    text = recipe.title,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )

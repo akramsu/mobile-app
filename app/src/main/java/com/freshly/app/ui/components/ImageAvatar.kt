@@ -30,6 +30,10 @@ fun ImageAvatar(
     size: Dp = 48.dp,
     modifier: Modifier = Modifier
 ) {
+    // Check if imageUrl is a Cloudinary URL or valid URL (not emoji)
+    val isValidUrl = !imageUrl.isNullOrEmpty() && 
+                     (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))
+    
     Box(
         modifier = modifier
             .size(size)
@@ -37,7 +41,8 @@ fun ImageAvatar(
             .background(Primary500.copy(alpha = 0.2f)),
         contentAlignment = Alignment.Center
     ) {
-        if (!imageUrl.isNullOrEmpty()) {
+        if (isValidUrl) {
+            // Load image from Cloudinary URL
             Image(
                 painter = rememberAsyncImagePainter(imageUrl),
                 contentDescription = name,
@@ -45,11 +50,12 @@ fun ImageAvatar(
                 contentScale = ContentScale.Crop
             )
         } else {
-            // Show initial or icon
+            // Show first letter of username as fallback
             val initial = name.firstOrNull()?.uppercase() ?: "?"
             Text(
                 text = initial,
                 style = MaterialTheme.typography.titleLarge,
+                fontSize = (size.value * 0.4).sp,
                 color = Primary500,
                 fontWeight = FontWeight.Bold
             )

@@ -63,7 +63,7 @@ fun AIAssistantScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 160.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 state = listState
             ) {
@@ -285,16 +285,14 @@ fun AIAssistantScreen(
 
             // Input field (at bottom) - positioned above bottom navigation
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 80.dp),
-                color = MaterialTheme.colorScheme.background,
-                shadowElevation = 8.dp
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.Transparent,
+                shadowElevation = 0.dp
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {

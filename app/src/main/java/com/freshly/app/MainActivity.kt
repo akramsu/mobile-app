@@ -39,6 +39,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Initialize Cloudinary
+        com.freshly.app.utils.CloudinaryManager.initialize(this)
+        
         // Initialize notification channels
         NotificationHelper.createNotificationChannels(this)
         

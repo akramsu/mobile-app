@@ -98,6 +98,25 @@ class UserRepository {
     }
     
     /**
+     * Update user profile (name and avatar)
+     */
+    suspend fun updateUserProfile(name: String, avatarUrl: String) {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return
+        
+        try {
+            val updates = mapOf(
+                "name" to name,
+                "avatarUrl" to avatarUrl
+            )
+            FirebaseManager.getUserDocument(userId).update(updates).await()
+            Log.d("UserRepository", "Profile updated successfully")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error updating profile", e)
+        }
+    }
+    
+    /**
      * Add XP to user
      */
     suspend fun addXP(amount: Int) {

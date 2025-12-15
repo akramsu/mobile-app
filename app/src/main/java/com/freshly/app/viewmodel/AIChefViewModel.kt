@@ -15,7 +15,7 @@ import kotlinx.coroutines.withTimeout
 class AIChefViewModel : ViewModel() {
     
     private val pantryRepository = PantryRepository()
-    private val recipeRepository = RecipeRepository()
+    private val recipeRepository = RecipeRepository.getInstance()
     private val userRepository = UserRepository()
     
     val pantryItems: StateFlow<List<PantryItem>> = pantryRepository.items

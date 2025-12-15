@@ -81,19 +81,7 @@ fun AppNavGraph(
                 onItemAdded = { navController.popBackStack() }
             )
         }
-        
-        composable(
-            route = Screen.ItemDetails.route,
-            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
-            ItemDetailsScreen(
-                itemId = itemId,
-                onBack = { navController.popBackStack() },
-                onEdit = { /* Handle edit */ }
-            )
-        }
-        
+
         composable(
             route = Screen.RecipeDetail.route,
             arguments = listOf(
@@ -121,15 +109,6 @@ fun AppNavGraph(
             )
         }
         
-        composable(Screen.Recommendations.route) {
-            RecommendationsScreen(
-                onBack = { navController.popBackStack() },
-                onSelectRecipe = { recipeId ->
-                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
-                }
-            )
-        }
-        
         composable(Screen.Settings.route) {
             SettingsScreen(
                 onBack = {
@@ -142,15 +121,12 @@ fun AppNavGraph(
                     navController.navigate(Screen.Splash.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                },
-                onOpenFirebaseDebug = {
-                    navController.navigate(Screen.FirebaseDebug.route)
                 }
             )
         }
         
-        composable(Screen.FirebaseDebug.route) {
-            FirebaseDebugScreen(
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(
                 onBack = { navController.popBackStack() }
             )
         }

@@ -14,6 +14,7 @@ class HomeViewModel : ViewModel() {
     
     private val userRepository = UserRepository()
     private val pantryRepository = PantryRepository()
+    private val recipeRepository = com.freshly.app.data.repository.RecipeRepository.getInstance()
     
     val user: StateFlow<User> = userRepository.user
         .stateIn(
@@ -23,6 +24,13 @@ class HomeViewModel : ViewModel() {
         )
     
     val expiringItems: StateFlow<List<PantryItem>> = pantryRepository.getExpiringItems()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+    
+    val recommendedRecipes: StateFlow<List<com.freshly.app.data.model.Recipe>> = recipeRepository.getRecommendedRecipesFlow()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

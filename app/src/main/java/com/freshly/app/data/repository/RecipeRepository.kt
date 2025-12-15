@@ -14,7 +14,18 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import java.util.*
 
-class RecipeRepository {
+class RecipeRepository private constructor() {
+    
+    companion object {
+        @Volatile
+        private var INSTANCE: RecipeRepository? = null
+        
+        fun getInstance(): RecipeRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RecipeRepository().also { INSTANCE = it }
+            }
+        }
+    }
     
     private val geminiService = GeminiApiService()
     private val recipeCache = mutableMapOf<String, Pair<List<Recipe>, Long>>()
@@ -223,8 +234,8 @@ class RecipeRepository {
             return it 
         }
         
-        // Then check static recommended recipes
-        val staticRecipe = getRecommendedRecipes().find { it.id == id }
+        // Then check static fallback recipes
+        val staticRecipe = getRecommendedRecipesFallback().find { it.id == id }
         if (staticRecipe != null) {
             Log.d("RecipeRepository", "Found recipe in static list: $id")
             return staticRecipe
@@ -262,16 +273,16 @@ class RecipeRepository {
     }
     
     /**
-     * Get daily recipe suggestion (uses local sample data)
+     * Get recommended recipes - simplified to static recipes to avoid Firebase listener conflicts
      */
-    fun getDailyRecipe(): Recipe {
-        return getSampleRecipes(emptyList()).first()
+    fun getRecommendedRecipesFlow(): Flow<List<Recipe>> = flow {
+        emit(getRecommendedRecipesFallback())
     }
     
     /**
-     * Get static recommended recipes for home screen
+     * Get static fallback recommended recipes for home screen
      */
-    fun getRecommendedRecipes(): List<Recipe> {
+    private fun getRecommendedRecipesFallback(): List<Recipe> {
         return listOf(
             Recipe(
                 id = "pasta-primavera",

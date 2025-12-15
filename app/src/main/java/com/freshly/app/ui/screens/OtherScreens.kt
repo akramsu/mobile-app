@@ -10,13 +10,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +37,7 @@ import coil.compose.AsyncImage
 import com.freshly.app.data.model.Category
 import com.freshly.app.data.model.PantryItem
 import com.freshly.app.ui.components.AppTopBar
+import com.freshly.app.ui.components.ImageAvatar
 import com.freshly.app.ui.components.PrimaryButton
 import com.freshly.app.ui.components.SecondaryButton
 import com.freshly.app.ui.theme.AI500
@@ -612,31 +617,6 @@ fun AddItemScreen(
 }
 
 @Composable
-fun ItemDetailsScreen(
-    itemId: String,
-    onBack: () -> Unit,
-    onEdit: () -> Unit
-) {
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = "Item Details",
-                onBackClick = onBack
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            Text(text = "Item Details Screen for item: $itemId")
-        }
-    }
-}
-
-@Composable
 private fun AIRecipeContentCard(aiContent: String) {
     val parsedData = remember(aiContent) {
         try {
@@ -771,7 +751,7 @@ fun RecipeDetailScreen(
     onBack: () -> Unit,
     generateAIContent: Boolean = false
 ) {
-    val recipeRepository = remember { com.freshly.app.data.repository.RecipeRepository() }
+    val recipeRepository = remember { com.freshly.app.data.repository.RecipeRepository.getInstance() }
     val geminiService = remember { com.freshly.app.data.api.GeminiApiService() }
     var recipe by remember { mutableStateOf<com.freshly.app.data.model.Recipe?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -1416,284 +1396,11 @@ fun NotificationCard(
     }
 }
 
-@Composable
-fun RecommendationsScreen(
-    onBack: () -> Unit,
-    onSelectRecipe: (String) -> Unit
-) {
-    val recommendations = listOf(
-        RecipeRecommendation(
-            id = "1",
-            name = "Creamy Blueberry Pancakes",
-            time = 20,
-            difficulty = "Easy",
-            rating = 4.8f,
-            image = "🥞",
-            description = "Perfect way to use up those blueberries before they spoil",
-            matchedItems = 4,
-            totalItems = 5
-        ),
-        RecipeRecommendation(
-            id = "2",
-            name = "Vegetable Stir Fry",
-            time = 15,
-            difficulty = "Easy",
-            rating = 4.6f,
-            image = "🥘",
-            description = "Great for using mixed vegetables in your pantry",
-            matchedItems = 7,
-            totalItems = 8
-        ),
-        RecipeRecommendation(
-            id = "3",
-            name = "Pasta Carbonara",
-            time = 25,
-            difficulty = "Medium",
-            rating = 4.9f,
-            image = "🍝",
-            description = "Classic Italian dish with items you already have",
-            matchedItems = 6,
-            totalItems = 7
-        ),
-        RecipeRecommendation(
-            id = "4",
-            name = "Tomato Soup",
-            time = 30,
-            difficulty = "Easy",
-            rating = 4.5f,
-            image = "🍲",
-            description = "Comfort food to use up expiring tomatoes",
-            matchedItems = 5,
-            totalItems = 6
-        )
-    )
-
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = "AI Recommendations",
-                onBackClick = onBack
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Header Info
-            item {
-                Text(
-                    text = "Based on your pantry, here are personalized recipes to help you reduce food waste and enjoy your ingredients.",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    lineHeight = 20.sp
-                )
-            }
-
-            // Recipe Cards
-            items(recommendations.size) { index ->
-                val recipe = recommendations[index]
-                RecipeRecommendationCard(
-                    recipe = recipe,
-                    onClick = { onSelectRecipe(recipe.id) }
-                )
-            }
-
-            // Smart Tip
-            item {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 0.dp,
-                        color = Color.Transparent
-                    )
-                ) {
-                    Row(modifier = Modifier.padding(16.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(60.dp)
-                                .background(
-                                    AI500,
-                                    shape = RoundedCornerShape(2.dp)
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "💡 SMART TIP",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AI500,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Text(
-                                text = "Recipes with higher match percentages use more of your available ingredients, helping reduce waste.",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                lineHeight = 20.sp
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Bottom spacing
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
-        }
-    }
-}
-
-data class RecipeRecommendation(
-    val id: String,
-    val name: String,
-    val time: Int,
-    val difficulty: String,
-    val rating: Float,
-    val image: String,
-    val description: String,
-    val matchedItems: Int,
-    val totalItems: Int
-)
-
-@Composable
-fun RecipeRecommendationCard(
-    recipe: RecipeRecommendation,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5)),
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Recipe Image/Emoji
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .background(
-                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                            colors = listOf(
-                                Primary500.copy(alpha = 0.2f),
-                                Primary500.copy(alpha = 0.1f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = recipe.image,
-                    fontSize = 32.sp
-                )
-            }
-
-            // Recipe Info
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Name
-                Text(
-                    text = recipe.name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                // Description
-                Text(
-                    text = recipe.description,
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    lineHeight = 16.sp
-                )
-
-                // Time, Difficulty, Rating
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "⏱️ ${recipe.time} min",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "📊 ${recipe.difficulty}",
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "★ ${recipe.rating}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFB547)
-                    )
-                }
-
-                // Match Progress Bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(6.dp)
-                            .background(
-                                Color(0xFFE5E5E5),
-                                shape = RoundedCornerShape(3.dp)
-                            )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(recipe.matchedItems.toFloat() / recipe.totalItems.toFloat())
-                                .background(
-                                    Primary500,
-                                    shape = RoundedCornerShape(3.dp)
-                                )
-                        )
-                    }
-                    Text(
-                        text = "${recipe.matchedItems}/${recipe.totalItems}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Gray
-                    )
-                }
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onLogout: () -> Unit = onBack,
-    onOpenFirebaseDebug: () -> Unit = {}
+    onLogout: () -> Unit = onBack
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferencesManager = remember { com.freshly.app.utils.PreferencesManager(context) }
@@ -1950,35 +1657,6 @@ fun SettingsScreen(
             // Action Buttons
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Firebase Debug Button
-                    Surface(
-                        onClick = onOpenFirebaseDebug,
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF9D7DF2).copy(alpha = 0.1f),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF9D7DF2)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CloudDone,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = Color(0xFF9D7DF2)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Firebase Status",
-                                color = Color(0xFF9D7DF2),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
-                    
                     // Logout Button
                     Surface(
                         onClick = onLogout,
@@ -2013,6 +1691,228 @@ fun SettingsScreen(
             // Bottom spacing for navigation bar
             item {
                 Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditProfileScreen(
+    onBack: () -> Unit,
+    viewModel: com.freshly.app.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val user by viewModel.user.collectAsState()
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var avatarUrl by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+    var isUploading by remember { mutableStateOf(false) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
+    
+    val scope = rememberCoroutineScope()
+    
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            isUploading = true
+            uploadError = null
+            scope.launch {
+                try {
+                    // Upload to Cloudinary
+                    val cloudinaryUrl = com.freshly.app.utils.CloudinaryManager.uploadImage(
+                        context = context,
+                        imageUri = it,
+                        folder = "avatars",
+                        maxSize = 800
+                    )
+                    avatarUrl = cloudinaryUrl
+                    isUploading = false
+                } catch (e: Exception) {
+                    uploadError = e.message ?: "Upload failed"
+                    isUploading = false
+                }
+            }
+        }
+    }
+    
+    LaunchedEffect(user) {
+        name = user.name ?: ""
+        email = user.email ?: ""
+        avatarUrl = user.avatarUrl ?: ""
+    }
+    
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "Edit Profile",
+                onBackClick = onBack
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Avatar Section
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Profile Picture",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .border(
+                                width = 3.dp,
+                                color = Primary500,
+                                shape = CircleShape
+                            )
+                            .padding(4.dp)
+                            .clickable(enabled = !isUploading) { 
+                                imagePickerLauncher.launch("image/*")
+                            }
+                    ) {
+                        ImageAvatar(
+                            imageUrl = avatarUrl,
+                            name = name.ifEmpty { "User" },
+                            size = 112.dp
+                        )
+                        
+                        // Edit icon overlay
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(36.dp),
+                            shape = CircleShape,
+                            color = Primary500
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isUploading) {
+                                    androidx.compose.material3.CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text(
+                                        text = "✏️",
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    SecondaryButton(
+                        text = if (isUploading) "Uploading..." else "Upload Photo",
+                        onClick = { imagePickerLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth(0.6f),
+                        enabled = !isUploading
+                    )
+                    
+                    if (uploadError != null) {
+                        Text(
+                            text = uploadError!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    
+                    Text(
+                        text = "Click to upload your photo from gallery",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+            
+            // Name Field
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Name",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Enter your name") },
+                        singleLine = true
+                    )
+                }
+            }
+            
+            // Email Field
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Email",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Enter your email") },
+                        singleLine = true,
+                        enabled = false, // Email typically shouldn't be editable
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                    )
+                    Text(
+                        text = "Email cannot be changed",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+            
+            // Save Button
+            item {
+                PrimaryButton(
+                    text = if (isSaving) "Saving..." else "Save Changes",
+                    onClick = {
+                        if (!isSaving && !isUploading) {
+                            isSaving = true
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                                viewModel.updateProfile(name, avatarUrl)
+                                kotlinx.coroutines.delay(500)
+                                isSaving = false
+                                onBack()
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSaving && !isUploading && name.isNotBlank()
+                )
+            }
+            
+            // Bottom spacing
+            item {
+                Spacer(modifier = Modifier.height(60.dp))
             }
         }
     }

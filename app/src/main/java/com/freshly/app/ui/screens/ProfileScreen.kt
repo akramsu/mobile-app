@@ -38,6 +38,7 @@ import com.freshly.app.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     onSettingsClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -135,6 +136,15 @@ fun ProfileScreen(
                                 )
                             }
                         }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Edit Profile Button
+                        SecondaryButton(
+                            text = "✏️ Edit Profile",
+                            onClick = onEditProfileClick,
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        )
                     }
                 }
             }

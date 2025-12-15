@@ -1,10 +1,15 @@
-> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig UP-TO-DATE
 > Task :app:checkDebugAarMetadata UP-TO-DATE
 > Task :app:processDebugNavigationResources UP-TO-DATE
 > Task :app:compileDebugNavigationResources UP-TO-DATE
 > Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
 > Task :app:mapDebugSourceSetPaths UP-TO-DATE
 > Task :app:generateDebugResources UP-TO-DATE
 > Task :app:mergeDebugResources UP-TO-DATE
@@ -12,10 +17,66 @@
 > Task :app:parseDebugLocalResources UP-TO-DATE
 > Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
 > Task :app:extractDeepLinksDebug UP-TO-DATE
-> Task :app:processDebugMainManifest UP-TO-DATE
-> Task :app:processDebugManifest UP-TO-DATE
-> Task :app:processDebugManifestForPackage UP-TO-DATE
-> Task :app:processDebugResources UP-TO-DATE
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
 
-> Task :app:compileDebugKotlin FAILED
-16 actionable tasks: 1 executed, 15 up-to-date
+> Task :app:compileDebugKotlin
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/data/firebase/FirebaseManager.kt:21:18 'fun setPersistenceEnabled(p0: Boolean): FirebaseFirestoreSettings.Builder' is deprecated. Deprecated in Java.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/data/model/Recipe.kt:55:58 Unchecked cast of 'kotlin.collections.Map<*, *>' to 'kotlin.collections.Map<kotlin.String, kotlin.Any?>'.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/components/Buttons.kt:72:33 'val outlinedButtonBorder: BorderStroke' is deprecated. Please use the version that takes an `enabled` param to get the `BorderStroke` with the correct opacity.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/AIAssistantScreen.kt:327:57 'val Icons.Filled.Send: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Send.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OnboardingScreen.kt:28:8 'annotation class ExperimentalPagerApi : Annotation' is deprecated. accompanist/pager is deprecated.
+The androidx.compose equivalent of Pager is androidx.compose.foundation.pager.Pager.
+For more migration information, please visit https://google.github.io/accompanist/pager/#migration.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OnboardingScreen.kt:40:8 'annotation class ExperimentalPagerApi : Annotation' is deprecated. accompanist/pager is deprecated.
+The androidx.compose equivalent of Pager is androidx.compose.foundation.pager.Pager.
+For more migration information, please visit https://google.github.io/accompanist/pager/#migration.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OnboardingScreen.kt:63:22 'fun rememberPagerState(initialPage: Int = ...): PagerState' is deprecated. accompanist/pager is deprecated.
+The androidx.compose equivalent of rememberPagerState is androidx.compose.foundation.pager.rememberPagerState().
+For more migration information, please visit https://google.github.io/accompanist/pager/#migration.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OnboardingScreen.kt:84:13 'fun HorizontalPager(count: Int, modifier: Modifier = ..., state: PagerState = ..., reverseLayout: Boolean = ..., itemSpacing: Dp = ..., contentPadding: PaddingValues = ..., verticalAlignment: Alignment.Vertical = ..., flingBehavior: FlingBehavior = ..., key: ((@ParameterName(...) Int) -> Any)? = ..., userScrollEnabled: Boolean = ..., content: @Composable() ComposableFunction2<PagerScope, @ParameterName(...) Int, Unit>): Unit' is deprecated. accompanist/pager is deprecated.
+The androidx.compose equivalent of HorizontalPager is androidx.compose.foundation.pager.HorizontalPager
+For more migration information, please visit https://google.github.io/accompanist/pager/#migration.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OnboardingScreen.kt:93:13 'fun HorizontalPagerIndicator(pagerState: PagerState, modifier: Modifier = ..., pageCount: Int = ..., pageIndexMapping: (Int) -> Int = ..., activeColor: Color = ..., inactiveColor: Color = ..., indicatorWidth: Dp = ..., indicatorHeight: Dp = ..., spacing: Dp = ..., indicatorShape: Shape = ...): Unit' is deprecated. HorizontalPagerIndicator for accompanist Pagers are deprecated, please use the version that takes 
+   androidx.compose.foundation.pager.PagerState instead
+For more migration information, please visit https://google.github.io/accompanist/pager/#migration.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OtherScreens.kt:380:34 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes MenuAnchorType and enabled parameters.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OtherScreens.kt:546:38 'fun Modifier.menuAnchor(): Modifier' is deprecated. Use overload that takes MenuAnchorType and enabled parameters.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/OtherScreens.kt:1674:62 'val Icons.Outlined.Logout: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.Logout.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/ProfileScreen.kt:311:68 'fun String.capitalize(): String' is deprecated. Use replaceFirstChar instead.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/ProfileScreen.kt:541:21 'fun LinearProgressIndicator(progress: Float, modifier: Modifier = ..., color: Color = ..., trackColor: Color = ..., strokeCap: StrokeCap = ...): Unit' is deprecated. Use the overload that takes `progress` as a lambda.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/ProfileScreen.kt:763:33 'fun LinearProgressIndicator(progress: Float, modifier: Modifier = ..., color: Color = ..., trackColor: Color = ..., strokeCap: StrokeCap = ...): Unit' is deprecated. Use the overload that takes `progress` as a lambda.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/ProfileScreen.kt:795:78 'fun String.capitalize(): String' is deprecated. Use replaceFirstChar instead.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/screens/ProfileScreen.kt:847:76 'fun String.capitalize(): String' is deprecated. Use replaceFirstChar instead.
+w: file:///D:/projects/freshly/android-studio/app/src/main/java/com/freshly/app/ui/theme/Theme.kt:58:20 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 42s
+40 actionable tasks: 10 executed, 30 up-to-date
