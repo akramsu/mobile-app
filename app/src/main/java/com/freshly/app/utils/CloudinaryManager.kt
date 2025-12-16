@@ -4,41 +4,69 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
-import com.cloudinary.android.MediaManager
-import com.cloudinary.android.callback.ErrorInfo
-import com.cloudinary.android.callback.UploadCallback
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.io.ByteArrayOutputStream
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+import javax.net.ssl.HostnameVerifier
 
 object CloudinaryManager {
     private const val TAG = "CloudinaryManager"
+    private var cloudName = ""
+    private var apiKey = ""
+    private var apiSecret = ""
     private var isInitialized = false
+    
+    // Create a trust manager that doesn't validate certificate chains
+    private val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+    })
+    
+    // Create an SSL context that uses our trust manager
+    private val sslContext = SSLContext.getInstance("TLS").apply {
+        init(null, trustAllCerts, SecureRandom())
+    }
+    
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+        .hostnameVerifier(HostnameVerifier { _, _ -> true })
+        .build()
     
     // Initialize Cloudinary (call this once in Application or MainActivity)
     fun initialize(context: Context) {
         if (!isInitialized) {
             try {
                 // Get credentials from BuildConfig
-                val cloudName = com.freshly.app.BuildConfig.CLOUDINARY_CLOUD_NAME
-                val apiKey = com.freshly.app.BuildConfig.CLOUDINARY_API_KEY
-                val apiSecret = com.freshly.app.BuildConfig.CLOUDINARY_API_SECRET
+                cloudName = com.freshly.app.BuildConfig.CLOUDINARY_CLOUD_NAME
+                apiKey = com.freshly.app.BuildConfig.CLOUDINARY_API_KEY
+                apiSecret = com.freshly.app.BuildConfig.CLOUDINARY_API_SECRET
                 
                 if (cloudName.isEmpty() || apiKey.isEmpty() || apiSecret.isEmpty()) {
                     Log.w(TAG, "Cloudinary credentials not configured. Please add them to local.properties")
                     return
                 }
                 
-                val config = mapOf(
-                    "cloud_name" to cloudName,
-                    "api_key" to apiKey,
-                    "api_secret" to apiSecret
-                )
-                MediaManager.init(context, config)
                 isInitialized = true
-                Log.d(TAG, "Cloudinary initialized successfully")
+                Log.d(TAG, "Cloudinary initialized successfully (Direct HTTP mode)")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize Cloudinary", e)
             }
@@ -46,7 +74,7 @@ object CloudinaryManager {
     }
     
     /**
-     * Upload image to Cloudinary with compression and resizing
+     * Upload image to Cloudinary with compression and resizing using direct HTTP
      * Returns the secure URL of the uploaded image
      */
     suspend fun uploadImage(
@@ -54,72 +82,106 @@ object CloudinaryManager {
         imageUri: Uri,
         folder: String = "avatars",
         maxSize: Int = 800
-    ): String = suspendCancellableCoroutine { continuation ->
+    ): String = withContext(Dispatchers.IO) {
         try {
+            // Check if Cloudinary is initialized
+            if (!isInitialized) {
+                Log.e(TAG, "Cloudinary not initialized!")
+                throw Exception("Cloudinary not configured. Please add credentials to local.properties")
+            }
+            
+            Log.d(TAG, "Starting image upload from URI: $imageUri")
+            
             // Read and compress the image
             val inputStream = context.contentResolver.openInputStream(imageUri)
+                ?: throw Exception("Failed to open image")
+            
             val originalBitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream?.close()
+            inputStream.close()
             
             if (originalBitmap == null) {
-                continuation.resumeWithException(Exception("Failed to decode image"))
-                return@suspendCancellableCoroutine
+                throw Exception("Failed to decode image")
             }
+            
+            Log.d(TAG, "Image decoded: ${originalBitmap.width}x${originalBitmap.height}")
             
             // Resize bitmap to reduce file size
             val resizedBitmap = resizeBitmap(originalBitmap, maxSize)
+            Log.d(TAG, "Image resized to: ${resizedBitmap.width}x${resizedBitmap.height}")
             
             // Convert to byte array with compression
             val byteArrayOutputStream = ByteArrayOutputStream()
             resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 85, byteArrayOutputStream)
             val imageData = byteArrayOutputStream.toByteArray()
+            Log.d(TAG, "Image compressed to ${imageData.size} bytes")
             
             // Clean up
             originalBitmap.recycle()
             resizedBitmap.recycle()
             
-            // Upload to Cloudinary
-            val options = mapOf(
-                "folder" to folder,
-                "resource_type" to "image",
-                "overwrite" to true,
-                "invalidate" to true
-            )
+            // Generate timestamp
+            val timestamp = (System.currentTimeMillis() / 1000).toString()
             
-            MediaManager.get().upload(imageData).options(options).callback(object : UploadCallback {
-                override fun onStart(requestId: String) {
-                    Log.d(TAG, "Upload started: $requestId")
+            // Create signature for upload
+            val signature = generateSignature(folder, timestamp)
+            
+            val uploadUrl = "https://api.cloudinary.com/v1_1/$cloudName/image/upload"
+            Log.d(TAG, "Upload URL: $uploadUrl")
+            Log.d(TAG, "Cloud name: $cloudName, API key: ${apiKey.take(5)}...")
+            Log.d(TAG, "Signature: ${signature.take(10)}...")
+            
+            // Build multipart request
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", "image.jpg", 
+                    imageData.toRequestBody("image/jpeg".toMediaType()))
+                .addFormDataPart("folder", folder)
+                .addFormDataPart("timestamp", timestamp)
+                .addFormDataPart("api_key", apiKey)
+                .addFormDataPart("signature", signature)
+                .build()
+            
+            val request = Request.Builder()
+                .url(uploadUrl)
+                .post(requestBody)
+                .build()
+            
+            Log.d(TAG, "Sending HTTP upload request...")
+            
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                
+                Log.d(TAG, "Response code: ${response.code}, message: ${response.message}")
+                Log.d(TAG, "Response body: $responseBody")
+                
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Upload failed with code ${response.code}: $responseBody")
+                    throw Exception("Upload failed (${response.code}): $responseBody")
                 }
                 
-                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {
-                    val progress = (bytes.toFloat() / totalBytes.toFloat() * 100).toInt()
-                    Log.d(TAG, "Upload progress: $progress%")
-                }
+                Log.d(TAG, "Upload response: $responseBody")
                 
-                override fun onSuccess(requestId: String, resultData: Map<*, *>) {
-                    val secureUrl = resultData["secure_url"] as? String
-                    if (secureUrl != null) {
-                        Log.d(TAG, "Upload successful: $secureUrl")
-                        continuation.resume(secureUrl)
-                    } else {
-                        continuation.resumeWithException(Exception("No secure_url in response"))
-                    }
-                }
+                val jsonResponse = JSONObject(responseBody)
+                val secureUrl = jsonResponse.getString("secure_url")
                 
-                override fun onError(requestId: String, error: ErrorInfo) {
-                    Log.e(TAG, "Upload failed: ${error.description}")
-                    continuation.resumeWithException(Exception("Upload failed: ${error.description}"))
-                }
-                
-                override fun onReschedule(requestId: String, error: ErrorInfo) {
-                    Log.w(TAG, "Upload rescheduled: ${error.description}")
-                }
-            }).dispatch()
+                Log.d(TAG, "Upload successful: $secureUrl")
+                return@withContext secureUrl
+            }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error preparing upload", e)
-            continuation.resumeWithException(e)
+            Log.e(TAG, "Error uploading image", e)
+            throw e
         }
+    }
+    
+    /**
+     * Generate signature for Cloudinary upload
+     */
+    private fun generateSignature(folder: String, timestamp: String): String {
+        val toSign = "folder=$folder&timestamp=$timestamp$apiSecret"
+        val md = MessageDigest.getInstance("SHA-1")
+        val digest = md.digest(toSign.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
     }
     
     /**

@@ -50,6 +50,21 @@ android {
             "CLOUDINARY_API_SECRET",
             "\"${properties.getProperty("CLOUDINARY_API_SECRET", "")}\""
         )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_CLOUD_NAME",
+            "\"${properties.getProperty("CLOUDINARY_CLOUD_NAME", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_KEY",
+            "\"${properties.getProperty("CLOUDINARY_API_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_SECRET",
+            "\"${properties.getProperty("CLOUDINARY_API_SECRET", "")}\""
+        )
     }
 
     buildTypes {
@@ -109,9 +124,6 @@ dependencies {
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
-    
-    // Cloudinary for image uploads and management
-    implementation("com.cloudinary:cloudinary-android:2.5.0")
     
     // Google Fonts
     implementation("androidx.compose.ui:ui-text-google-fonts:1.5.4")

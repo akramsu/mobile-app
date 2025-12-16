@@ -273,10 +273,48 @@ class RecipeRepository private constructor() {
     }
     
     /**
-     * Get recommended recipes - simplified to static recipes to avoid Firebase listener conflicts
+     * Get recommended recipes from user's saved recipes, fallback to static
+     * Fetches once without listener to avoid crashes
      */
     fun getRecommendedRecipesFlow(): Flow<List<Recipe>> = flow {
-        emit(getRecommendedRecipesFallback())
+        val userId = FirebaseManager.userId
+        
+        if (userId.isEmpty()) {
+            Log.d("RecipeRepository", "No user logged in, using fallback recipes")
+            emit(getRecommendedRecipesFallback())
+            return@flow
+        }
+        
+        try {
+            Log.d("RecipeRepository", "Fetching saved recipes from Firebase...")
+            
+            // Fetch saved recipes once (no listener)
+            val snapshot = FirebaseManager.getRecipesCollection(userId)
+                .limit(4)
+                .get()
+                .await()
+            
+            val savedRecipes = snapshot.documents.mapNotNull { doc ->
+                try {
+                    doc.data?.let { Recipe.fromMap(it) }
+                } catch (e: Exception) {
+                    Log.e("RecipeRepository", "Error parsing recipe", e)
+                    null
+                }
+            }
+            
+            if (savedRecipes.isNotEmpty()) {
+                Log.d("RecipeRepository", "Found ${savedRecipes.size} saved recipes")
+                emit(savedRecipes)
+            } else {
+                Log.d("RecipeRepository", "No saved recipes found, using fallback")
+                emit(getRecommendedRecipesFallback())
+            }
+            
+        } catch (e: Exception) {
+            Log.e("RecipeRepository", "Error fetching saved recipes", e)
+            emit(getRecommendedRecipesFallback())
+        }
     }
     
     /**

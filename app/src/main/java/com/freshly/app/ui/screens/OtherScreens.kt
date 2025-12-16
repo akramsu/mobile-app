@@ -1040,10 +1040,36 @@ fun RecipeDetailScreen(
                     }
                     
                     // Save Recipe Button
+                    var isSaving by remember { mutableStateOf(false) }
+                    var saveSuccess by remember { mutableStateOf(false) }
+                    
                     PrimaryButton(
-                        text = "Save Recipe",
-                        onClick = { /* TODO: Implement save functionality */ },
-                        modifier = Modifier.fillMaxWidth()
+                        text = if (saveSuccess) "✓ Saved!" else if (isSaving) "Saving..." else "Save Recipe",
+                        onClick = { 
+                            if (!isSaving && !saveSuccess) {
+                                isSaving = true
+                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                    try {
+                                        recipeRepository.saveRecipe(currentRecipe)
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            saveSuccess = true
+                                            isSaving = false
+                                        }
+                                        // Reset after 2 seconds
+                                        kotlinx.coroutines.delay(2000)
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            saveSuccess = false
+                                        }
+                                    } catch (e: Exception) {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            isSaving = false
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving && !saveSuccess
                     )
 
                     // Chef's Tips (if available)
@@ -1720,8 +1746,10 @@ fun EditProfileScreen(
         uri?.let {
             isUploading = true
             uploadError = null
-            scope.launch {
+            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 try {
+                    android.util.Log.d("EditProfile", "Selected image URI: $it")
+                    
                     // Upload to Cloudinary
                     val cloudinaryUrl = com.freshly.app.utils.CloudinaryManager.uploadImage(
                         context = context,
@@ -1729,11 +1757,20 @@ fun EditProfileScreen(
                         folder = "avatars",
                         maxSize = 800
                     )
-                    avatarUrl = cloudinaryUrl
-                    isUploading = false
+                    
+                    android.util.Log.d("EditProfile", "Upload successful: $cloudinaryUrl")
+                    
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        avatarUrl = cloudinaryUrl
+                        isUploading = false
+                        uploadError = null
+                    }
                 } catch (e: Exception) {
-                    uploadError = e.message ?: "Upload failed"
-                    isUploading = false
+                    android.util.Log.e("EditProfile", "Upload failed", e)
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        uploadError = e.message ?: "Upload failed"
+                        isUploading = false
+                    }
                 }
             }
         }
