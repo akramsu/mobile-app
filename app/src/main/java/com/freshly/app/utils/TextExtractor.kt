@@ -40,8 +40,14 @@ class TextExtractor(private val context: Context) {
     
     private fun parseExtractedText(fullText: String, lines: List<String>): ExtractedItemInfo {
         val lowerText = fullText.lowercase()
-        val productName = extractProductName(lines)
+        
+        // Priority 1: Extract expiry date first (most reliable)
         val expiryDate = extractExpiryDate(fullText, lines)
+        val expiryLineIndex = findExpiryLineIndex(lines)
+        
+        // Priority 2: Extract product name using multiple strategies
+        val productName = extractProductName(lines, expiryLineIndex)
+        
         val quantity = extractQuantity(fullText)
         val unit = extractUnit(fullText, quantity)
         val category = detectCategory(lowerText)
@@ -63,31 +69,71 @@ class TextExtractor(private val context: Context) {
         )
     }
     
-    private fun extractProductName(lines: List<String>): String? {
-        // Look for the product name in the first few prominent lines
-        // Typically product names are in the first 1-3 lines and have certain characteristics
+    private fun findExpiryLineIndex(lines: List<String>): Int? {
+        val expiryKeywords = listOf("exp", "expiry", "expiration", "best before", "use by", "bb", "use before", "mfg", "manufactured")
         
-        for (i in 0 until minOf(5, lines.size)) {
+        for (i in lines.indices) {
+            val lowerLine = lines[i].lowercase()
+            if (expiryKeywords.any { lowerLine.contains(it) }) {
+                return i
+            }
+            // Also check if line contains date pattern
+            if (lowerLine.matches(Regex(".*\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}.*"))) {
+                return i
+            }
+        }
+        return null
+    }
+    
+    private fun extractProductName(lines: List<String>, expiryLineIndex: Int?): String? {
+        // Strategy 1: Look for prominent text that's NOT near expiry date info
+        // Strategy 2: Find longest meaningful line
+        // Strategy 3: Look for brand names or capitalized words
+        
+        val candidates = mutableListOf<Pair<String, Int>>()
+        val skipKeywords = listOf("exp", "expiry", "expiration", "best before", "use by", "bb", "mfg", "batch", "lot", "manufactured", "ingredients", "nutrition")
+        
+        for (i in lines.indices) {
             val line = lines[i].trim()
+            val lowerLine = line.lowercase()
             
             // Skip lines that are likely not product names
             if (line.length < 3) continue
-            if (line.matches(Regex("^[0-9.]+$"))) continue // Pure numbers
+            if (line.matches(Regex("^[0-9.\\s]+$"))) continue // Pure numbers
             if (line.matches(Regex(".*\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}.*"))) continue // Date lines
-            if (line.lowercase().startsWith("exp")) continue
-            if (line.lowercase().startsWith("best before")) continue
-            if (line.lowercase().startsWith("use by")) continue
-            if (line.lowercase().startsWith("mfg")) continue
-            if (line.lowercase().startsWith("batch")) continue
-            if (line.lowercase().startsWith("lot")) continue
+            if (skipKeywords.any { lowerLine.contains(it) }) continue
             
-            // Valid product name found
-            if (line.length >= 3 && line.length <= 50) {
-                return line
+            // Skip lines too close to expiry line
+            if (expiryLineIndex != null && kotlin.math.abs(i - expiryLineIndex) <= 1) continue
+            
+            // Calculate score for this candidate
+            var score = 0
+            
+            // Prefer lines that:
+            // - Are in the first half of detected lines
+            if (i < lines.size / 2) score += 5
+            
+            // - Have reasonable length (not too short, not too long)
+            if (line.length in 5..40) score += 10
+            
+            // - Contain mostly letters
+            val letterRatio = line.count { it.isLetter() }.toFloat() / line.length
+            if (letterRatio > 0.7f) score += 8
+            
+            // - Start with capital letter (brand names)
+            if (line[0].isUpperCase()) score += 6
+            
+            // - Don't contain too many numbers
+            val numberRatio = line.count { it.isDigit() }.toFloat() / line.length
+            if (numberRatio < 0.3f) score += 5
+            
+            if (score > 10) {
+                candidates.add(Pair(line, score))
             }
         }
         
-        return null
+        // Return candidate with highest score
+        return candidates.maxByOrNull { it.second }?.first
     }
     
     private fun extractExpiryDate(fullText: String, lines: List<String>): String? {

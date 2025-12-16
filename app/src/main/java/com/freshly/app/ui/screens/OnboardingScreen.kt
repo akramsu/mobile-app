@@ -10,14 +10,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Recycling
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,7 +40,8 @@ import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
 
 data class OnboardingPage(
-    val emoji: String,
+    val icon: ImageVector,
+    val iconColor: Color,
     val title: String,
     val description: String
 )
@@ -44,17 +53,20 @@ fun OnboardingScreen(
 ) {
     val pages = listOf(
         OnboardingPage(
-            emoji = "📦",
+            icon = Icons.Filled.Inventory2,
+            iconColor = Color(0xFF41B37C),
             title = "Track Your Food",
             description = "Keep tabs on everything in your pantry, fridge, and freezer"
         ),
         OnboardingPage(
-            emoji = "♻️",
+            icon = Icons.Filled.Recycling,
+            iconColor = Color(0xFF10B981),
             title = "Reduce Waste",
             description = "Get notified before items expire and save money"
         ),
         OnboardingPage(
-            emoji = "👨‍🍳",
+            icon = Icons.Filled.AutoAwesome,
+            iconColor = Color(0xFFFFB547),
             title = "AI-Powered Recipes",
             description = "Create delicious meals with ingredients you already have"
         )
@@ -128,10 +140,23 @@ fun OnboardingPageContent(page: OnboardingPage) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = page.emoji,
-            fontSize = 120.sp
-        )
+        Surface(
+            modifier = Modifier.size(140.dp),
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = page.iconColor.copy(alpha = 0.15f)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Icon(
+                    imageVector = page.icon,
+                    contentDescription = page.title,
+                    modifier = Modifier.size(80.dp),
+                    tint = page.iconColor
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(40.dp))
         Text(
             text = page.title,

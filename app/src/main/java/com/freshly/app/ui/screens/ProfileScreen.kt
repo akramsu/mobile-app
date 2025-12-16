@@ -1,6 +1,7 @@
 package com.freshly.app.ui.screens
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +15,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,18 +30,50 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.freshly.app.R
 import com.freshly.app.data.model.Achievement
 import com.freshly.app.data.model.AchievementCategory
 import com.freshly.app.data.model.AchievementRarity
 import com.freshly.app.ui.components.*
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.viewmodel.ProfileViewModel
+
+// Helper function to map achievement icons to Material Icons
+fun getAchievementIcon(iconName: String, category: AchievementCategory, rarity: AchievementRarity): ImageVector {
+    return when {
+        // Map based on category and rarity
+        rarity == AchievementRarity.LEGENDARY -> Icons.Filled.WorkspacePremium
+        rarity == AchievementRarity.EPIC -> Icons.Filled.Stars
+        category == AchievementCategory.STREAK && iconName.contains("🔥") -> Icons.Filled.LocalFireDepartment
+        category == AchievementCategory.SPECIAL || iconName.contains("⭐") -> Icons.Filled.Star
+        iconName.contains("🏆") || iconName.contains("👑") -> Icons.Filled.EmojiEvents
+        iconName.contains("💎") -> Icons.Filled.Stars
+        // Default mapping by category
+        category == AchievementCategory.TRACKING -> Icons.Filled.MilitaryTech
+        category == AchievementCategory.SAVING -> Icons.Filled.Star
+        category == AchievementCategory.COOKING -> Icons.Filled.EmojiEvents
+        category == AchievementCategory.STREAK -> Icons.Filled.LocalFireDepartment
+        else -> Icons.Filled.MilitaryTech
+    }
+}
+
+// Helper function to get achievement icon color
+fun getAchievementIconColor(rarity: AchievementRarity): Color {
+    return when (rarity) {
+        AchievementRarity.COMMON -> Color(0xFF94A3B8)
+        AchievementRarity.RARE -> Color(0xFF3B82F6)
+        AchievementRarity.EPIC -> Color(0xFF9333EA)
+        AchievementRarity.LEGENDARY -> Color(0xFFFBBF24)
+    }
+}
 
 @Composable
 fun ProfileScreen(
@@ -125,10 +165,6 @@ fun ProfileScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    text = "⭐",
-                                    fontSize = 14.sp
-                                )
-                                Text(
                                     text = "Level ${user.level}",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
@@ -141,7 +177,7 @@ fun ProfileScreen(
                         
                         // Edit Profile Button
                         SecondaryButton(
-                            text = "✏️ Edit Profile",
+                            text = "Edit Profile",
                             onClick = onEditProfileClick,
                             modifier = Modifier.fillMaxWidth(0.6f)
                         )
@@ -160,7 +196,7 @@ fun ProfileScreen(
                     // XP Card
                     StatCard(
                         modifier = Modifier.weight(1f),
-                        icon = "✨",
+                        icon = "XP",
                         value = "${user.xp}",
                         label = "Total XP",
                         color = Primary500
@@ -169,8 +205,8 @@ fun ProfileScreen(
                     // Streak Card
                     StatCard(
                         modifier = Modifier.weight(1f),
-                        icon = "🔥",
-                        value = "${user.streak}",
+                        icon = "${user.streak}",
+                        value = "Days",
                         label = "Day Streak",
                         color = Color(0xFFFF6B6B)
                     )
@@ -178,8 +214,8 @@ fun ProfileScreen(
                     // Achievements Card
                     StatCard(
                         modifier = Modifier.weight(1f),
-                        icon = "🏆",
-                        value = "$unlockedCount/$totalCount",
+                        icon = "$unlockedCount",
+                        value = "/$totalCount",
                         label = "Badges",
                         color = Color(0xFFFFB547)
                     )
@@ -229,7 +265,7 @@ fun ProfileScreen(
                         modifier = Modifier.padding(horizontal = 16.dp)
                     ) {
                         Text(
-                            text = "🎉 Recently Unlocked",
+                            text = "Recently Unlocked",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
@@ -295,21 +331,11 @@ fun ProfileScreen(
                         )
                     }
                     items(AchievementCategory.values()) { category ->
-                        val categoryEmoji = when (category) {
-                            AchievementCategory.TRACKING -> "📦"
-                            AchievementCategory.SAVING -> "♻️"
-                            AchievementCategory.COOKING -> "👨‍🍳"
-                            AchievementCategory.STREAK -> "🔥"
-                            AchievementCategory.SPECIAL -> "⭐"
-                        }
                         FilterChip(
                             selected = selectedCategory == category,
                             onClick = { selectedCategory = category },
                             label = { 
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(categoryEmoji)
-                                    Text(category.name.lowercase().capitalize())
-                                }
+                                Text(category.name.lowercase().capitalize())
                             }
                         )
                     }
@@ -482,29 +508,22 @@ fun AchievementBadge(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Rarity indicator for legendary/epic
-                if (achievement.isUnlocked && achievement.rarity >= AchievementRarity.EPIC) {
-                    Text(
-                        text = when (achievement.rarity) {
-                            AchievementRarity.EPIC -> "✨"
-                            AchievementRarity.LEGENDARY -> "👑"
-                            else -> ""
-                        },
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(bottom = 2.dp)
-                    )
-                }
-                
-                Text(
-                    text = achievement.iconName,
-                    fontSize = when (achievement.rarity) {
-                        AchievementRarity.COMMON -> 32.sp
-                        AchievementRarity.RARE -> 36.sp
-                        AchievementRarity.EPIC -> 38.sp
-                        AchievementRarity.LEGENDARY -> 42.sp
-                    },
-                    color = if (achievement.isUnlocked) Color.Unspecified else Color.Gray.copy(alpha = 0.4f),
-                    modifier = Modifier.padding(bottom = 4.dp)
+                // Achievement icon
+                Icon(
+                    imageVector = getAchievementIcon(achievement.iconName, achievement.category, achievement.rarity),
+                    contentDescription = achievement.title,
+                    modifier = Modifier
+                        .size(when (achievement.rarity) {
+                            AchievementRarity.COMMON -> 32.dp
+                            AchievementRarity.RARE -> 36.dp
+                            AchievementRarity.EPIC -> 38.dp
+                            AchievementRarity.LEGENDARY -> 42.dp
+                        })
+                        .padding(bottom = 4.dp),
+                    tint = if (!achievement.isUnlocked) 
+                        Color.Gray.copy(alpha = 0.4f)
+                    else
+                        getAchievementIconColor(achievement.rarity)
                 )
                 
                 Text(
@@ -580,9 +599,11 @@ fun RecentAchievementCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = achievement.iconName,
-                fontSize = 36.sp
+            Icon(
+                imageVector = getAchievementIcon(achievement.iconName, achievement.category, achievement.rarity),
+                contentDescription = achievement.title,
+                modifier = Modifier.size(36.dp),
+                tint = getAchievementIconColor(achievement.rarity)
             )
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -648,26 +669,29 @@ fun AchievementDetailModal(
                     }
                 }
                 
-                // Large icon with rarity indicator
-                Box(
-                    contentAlignment = Alignment.Center
+                // Large icon
+                Surface(
+                    modifier = Modifier.size(120.dp),
+                    shape = CircleShape,
+                    color = if (achievement.isUnlocked)
+                        getAchievementIconColor(achievement.rarity).copy(alpha = 0.15f)
+                    else
+                        Color.Gray.copy(alpha = 0.1f)
                 ) {
-                    if (achievement.rarity >= AchievementRarity.EPIC) {
-                        Text(
-                            text = when (achievement.rarity) {
-                                AchievementRarity.EPIC -> "✨"
-                                AchievementRarity.LEGENDARY -> "👑"
-                                else -> ""
-                            },
-                            fontSize = 100.sp,
-                            color = categoryColor.copy(alpha = 0.1f)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = getAchievementIcon(achievement.iconName, achievement.category, achievement.rarity),
+                            contentDescription = achievement.title,
+                            modifier = Modifier.size(60.dp),
+                            tint = if (!achievement.isUnlocked) 
+                                Color.Gray.copy(alpha = 0.5f)
+                            else
+                                getAchievementIconColor(achievement.rarity)
                         )
                     }
-                    Text(
-                        text = achievement.iconName,
-                        fontSize = 80.sp,
-                        color = if (achievement.isUnlocked) Color.Unspecified else Color.Gray.copy(alpha = 0.5f)
-                    )
                 }
                 
                 // Title
@@ -816,7 +840,6 @@ fun AchievementDetailModal(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "✨", fontSize = 14.sp)
                                 Text(
                                     text = "+${achievement.xpReward} XP",
                                     style = MaterialTheme.typography.bodySmall,

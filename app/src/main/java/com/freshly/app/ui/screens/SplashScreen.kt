@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,10 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.freshly.app.R
 import com.freshly.app.ui.theme.Primary500
 import kotlinx.coroutines.delay
 
@@ -67,14 +72,25 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // App logo (using emoji for now)
+                // App logo with white background for visibility on green
+                Surface(
+                    modifier = Modifier.size(220.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                    color = Color.White,
+                    shadowElevation = 16.dp
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "Freshly Logo",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "🍃",
-                    fontSize = 80.sp
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Freshly",
+                    text = "",
                     style = MaterialTheme.typography.displayMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold

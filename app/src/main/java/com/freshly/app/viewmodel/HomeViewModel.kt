@@ -19,8 +19,8 @@ class HomeViewModel : ViewModel() {
     val user: StateFlow<User> = userRepository.user
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = User(name = "User", xp = 0, level = 1, streak = 0)
+            started = SharingStarted.Eagerly,
+            initialValue = User(name = "", xp = 0, level = 1, streak = 0)
         )
     
     val expiringItems: StateFlow<List<PantryItem>> = pantryRepository.getExpiringItems()

@@ -73,7 +73,7 @@ fun HomeScreen(
                     // Greeting Text
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "${DateUtils.getGreeting()}, ${user.name} 👋",
+                            text = "Hi, ${user.name}!",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -140,7 +140,6 @@ fun HomeScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = "🔥", fontSize = 24.sp)
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
                                     text = "Day Streak",

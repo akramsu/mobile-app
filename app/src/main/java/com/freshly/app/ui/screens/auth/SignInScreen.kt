@@ -1,5 +1,6 @@
 package com.freshly.app.ui.screens.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,7 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -26,6 +29,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.freshly.app.R
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.freshly.app.ui.components.PrimaryButton
 import com.freshly.app.ui.theme.Primary500
@@ -90,18 +94,12 @@ fun SignInScreen(
                 Spacer(modifier = Modifier.height(40.dp))
                 
                 // Logo/Icon
-                Surface(
-                    modifier = Modifier.size(80.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Primary500.copy(alpha = 0.1f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🥬",
-                            fontSize = 48.sp
-                        )
-                    }
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Freshly Logo",
+                    modifier = Modifier.size(150.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
