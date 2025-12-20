@@ -118,7 +118,8 @@ object GeminiResponseParser {
             ingredients = ingredients,
             steps = steps,
             matchedIngredients = matchedIngredients,
-            tags = tags
+            tags = tags,
+            youtubeVideoLink = recipeJson.optString("youtubeVideoLink").takeIf { it.isNotBlank() }
         )
     }
     
@@ -135,19 +136,43 @@ object GeminiResponseParser {
         }
         
         try {
+            Log.d(TAG, "Parsing insights from response (${response.length} chars)")
             val lines = response.split("\n").filter { it.isNotBlank() }
+            Log.d(TAG, "Found ${lines.size} non-blank lines")
             
-            for (line in lines) {
+            for ((index, line) in lines.withIndex()) {
+                val trimmedLine = line.trim()
+                Log.d(TAG, "Line $index: ${trimmedLine.take(50)}...")
+                
                 when {
-                    line.trim().startsWith("🎉") -> insights["achievement"] = line.trim()
-                    line.trim().startsWith("💡") -> insights["tip"] = line.trim()
-                    line.trim().startsWith("💰") -> insights["savings"] = line.trim()
-                    line.trim().startsWith("🌱") -> insights["environmental"] = line.trim()
-                    line.trim().startsWith("⚡") -> insights["urgent"] = line.trim()
+                    trimmedLine.startsWith("🎉") -> {
+                        insights["achievement"] = trimmedLine
+                        Log.d(TAG, "Found achievement insight")
+                    }
+                    trimmedLine.startsWith("💡") -> {
+                        insights["tip"] = trimmedLine
+                        Log.d(TAG, "Found tip insight")
+                    }
+                    trimmedLine.startsWith("💰") -> {
+                        insights["savings"] = trimmedLine
+                        Log.d(TAG, "Found savings insight")
+                    }
+                    trimmedLine.startsWith("🌱") -> {
+                        insights["environmental"] = trimmedLine
+                        Log.d(TAG, "Found environmental insight")
+                    }
+                    trimmedLine.startsWith("⚡") -> {
+                        insights["urgent"] = trimmedLine
+                        Log.d(TAG, "Found urgent insight")
+                    }
                 }
             }
             
-            Log.d(TAG, "Parsed ${insights.size} insights")
+            Log.d(TAG, "Parsed ${insights.size} insights: ${insights.keys.joinToString()}")
+            
+            if (insights.isEmpty()) {
+                Log.w(TAG, "No emoji-based insights found. Full response: $response")
+            }
             
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing insights", e)

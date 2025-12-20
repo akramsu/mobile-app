@@ -39,13 +39,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // Initialize Cloudinary
         com.freshly.app.utils.CloudinaryManager.initialize(this)
         
-        // Initialize notification channels
         NotificationHelper.createNotificationChannels(this)
         
-        // Schedule periodic expiry checks
         scheduleExpiryCheck()
         
         setContent {
@@ -74,21 +71,17 @@ fun FreshlyApp() {
     var startDestination by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
-    // Determine start destination
     LaunchedEffect(Unit) {
         scope.launch {
-            // Check if user has completed onboarding
             val hasOnboarded = preferencesManager.hasOnboarded.first()
             
-            // Check if already authenticated
             val isAuthenticated = FirebaseManager.isAuthenticated
             
             startDestination = when {
-                // Not authenticated - show splash then sign in
                 !isAuthenticated -> Screen.Splash.route
-                // Authenticated but not onboarded - show onboarding
+
                 !hasOnboarded -> Screen.Onboarding.route
-                // Authenticated and onboarded - go directly to main
+
                 else -> Screen.Main.route
             }
         }
@@ -108,16 +101,16 @@ fun FreshlyApp() {
 }
 
 private fun ComponentActivity.scheduleExpiryCheck() {
-    // Create periodic work request - runs every 12 hours
+
     val workRequest = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(
         repeatInterval = 12,
         repeatIntervalTimeUnit = TimeUnit.HOURS
     ).build()
     
-    // Schedule the work (replace existing if already scheduled)
+
     WorkManager.getInstance(this).enqueueUniquePeriodicWork(
         ExpiryCheckWorker.WORK_NAME,
-        ExistingPeriodicWorkPolicy.KEEP, // Keep existing schedule if already running
+        ExistingPeriodicWorkPolicy.KEEP,
         workRequest
     )
     

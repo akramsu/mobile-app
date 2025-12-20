@@ -1039,6 +1039,23 @@ fun RecipeDetailScreen(
                         }
                     }
                     
+                    // YouTube Video Button
+                    if (!currentRecipe.youtubeVideoLink.isNullOrBlank()) {
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        SecondaryButton(
+                            text = "🎥 Watch on YouTube",
+                            onClick = {
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(currentRecipe.youtubeVideoLink))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    android.util.Log.e("RecipeDetail", "Error opening YouTube link: ${currentRecipe.youtubeVideoLink}", e)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    
                     // Save Recipe Button
                     var isSaving by remember { mutableStateOf(false) }
                     var saveSuccess by remember { mutableStateOf(false) }

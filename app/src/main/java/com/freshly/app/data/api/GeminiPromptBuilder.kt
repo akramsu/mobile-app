@@ -21,7 +21,8 @@ object GeminiPromptBuilder {
         return """
 2 recipes: $ingredientList$dietary
 JSON:
-[{"title":"","description":"","cookTime":25,"servings":2,"difficulty":"Easy","ingredients":[{"name":"","amount":"","isMatched":true}],"steps":[""],"tags":[""]}]
+[{"title":"","description":"","cookTime":25,"servings":2,"difficulty":"Easy","ingredients":[{"name":"","amount":"","isMatched":true}],"steps":[""],"tags":[""],"youtubeVideoLink":""}]
+For youtubeVideoLink: Use format https://www.youtube.com/results?search_query=RECIPE_NAME+recipe (replace spaces with +)
 3 steps max, brief
         """.trimIndent()
     }
@@ -61,47 +62,24 @@ Keep responses natural and conversational.
         pantryData: Map<String, Any>,
         userProfile: Map<String, Any>
     ): String {
-        val totalItems = pantryData["totalItems"] ?: 0
-        val expiringSoon = pantryData["expiringSoon"] ?: 0
-        val expiredThisMonth = pantryData["expiredThisMonth"] ?: 0
+        val totalItems = pantryData["totalItems"] as? Int ?: 0
+        val expiringSoon = pantryData["expiringSoon"] as? Int ?: 0
+        val expiredThisMonth = pantryData["expiredThisMonth"] as? Int ?: 0
         val topCategories = pantryData["topCategories"] ?: emptyList<String>()
-        val expiringItemsList = pantryData["expiringItemsList"] ?: emptyList<String>()
+        val expiringItemsList = (pantryData["expiringItemsList"] as? List<*>) ?: emptyList<String>()
         
         val dietaryRestrictions = (userProfile["dietaryRestrictions"] as? List<*>)?.joinToString(", ") ?: "None"
         val userName = userProfile["userName"] ?: "there"
         
         return """
-Analyze this user's food management data and generate personalized, actionable insights.
+Pantry: $totalItems items | $expiringSoon expiring soon
+${if (expiringItemsList.isNotEmpty()) "Items: ${expiringItemsList.take(5).joinToString(", ")}" else ""}
 
-User: $userName
-Pantry Overview:
-- Total items: $totalItems
-- Expiring soon (≤3 days): $expiringSoon items
-- Expired this month: $expiredThisMonth items
-- Top categories: $topCategories
-- Items expiring soon: $expiringItemsList
-
-User Profile:
-- Dietary preferences: $dietaryRestrictions
-
-Generate 4-5 specific insights in this exact format (one insight per line):
-
-🎉 [Positive achievement or progress - be specific and encouraging]
-
-💡 [Actionable tip using specific item names from the pantry]
-
-💰 [Estimated money saved or waste reduced - use realistic numbers based on expired/expiring items]
-
-🌱 [Environmental impact statement - quantify if possible]
-
-⚡ [URGENT action for items expiring in 1-3 days - list specific items]
-
-Requirements:
-- Be specific - use actual item names when available
-- Estimate concrete numbers (e.g., "$12 saved", "2 lbs waste prevented")
-- Make it personal and encouraging
-- Focus on actionable advice, not generic tips
-- If no items expiring, focus on achievement and maintenance tips
+4 insights (max 20 words each):
+🎉 Waste prevented this week (specific numbers)
+💡 Recipe idea using specific items
+💰 Money/waste saved (estimate dollars & quantity)
+⚡ Urgent: ${if (expiringSoon > 0) "list expiring items with days left" else "say no urgent items"}
         """.trimIndent()
     }
     

@@ -10,6 +10,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,6 +47,7 @@ fun AIAssistantScreen(
     val isGeneratingInsights by viewModel.isLoadingInsights.collectAsState()
     val isGeneratingResponse by viewModel.isGeneratingResponse.collectAsState()
     val currentStreamingText by viewModel.currentStreamingText.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -67,6 +72,12 @@ fun AIAssistantScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 state = listState
             ) {
+                // Quick Insights Section (No AI)
+                item {
+                    val pantryItems by viewModel.pantryItems.collectAsState()
+                    QuickInsightsSection(pantryItems)
+                }
+                
                 // AI Insights Section
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -136,6 +147,46 @@ fun AIAssistantScreen(
                                     }
                                 }
                             }
+                            
+                            // Show error message if insights generation failed
+                            errorMessage?.let { error ->
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "⚠️",
+                                            fontSize = 24.sp
+                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Error",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                            Text(
+                                                text = error,
+                                                fontSize = 13.sp,
+                                                color = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                        }
+                                        TextButton(
+                                            onClick = { viewModel.dismissError() }
+                                        ) {
+                                            Text("Dismiss")
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             // Insights Card
                             Surface(
@@ -169,7 +220,12 @@ fun AIAssistantScreen(
                                     
                                     // Display each insight
                                     insights["achievement"]?.let { 
-                                        Text(it, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium) 
+                                        Text(
+                                            text = it,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            lineHeight = 22.sp
+                                        ) 
                                     }
                                     insights["tip"]?.let { 
                                         Surface(
@@ -181,15 +237,17 @@ fun AIAssistantScreen(
                                                 modifier = Modifier.padding(12.dp),
                                                 fontSize = 14.sp,
                                                 color = Primary500,
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.Medium,
+                                                lineHeight = 20.sp
                                             )
                                         }
                                     }
                                     insights["savings"]?.let { 
-                                        Text(it, style = MaterialTheme.typography.bodyMedium) 
-                                    }
-                                    insights["environmental"]?.let { 
-                                        Text(it, style = MaterialTheme.typography.bodyMedium) 
+                                        Text(
+                                            text = it,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            lineHeight = 20.sp
+                                        ) 
                                     }
                                     insights["urgent"]?.let { 
                                         Surface(
@@ -201,9 +259,17 @@ fun AIAssistantScreen(
                                                 modifier = Modifier.padding(12.dp),
                                                 fontSize = 14.sp,
                                                 color = MaterialTheme.colorScheme.error,
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.Medium,
+                                                lineHeight = 20.sp
                                             )
                                         }
+                                    }
+                                    insights["environmental"]?.let { 
+                                        Text(
+                                            text = it,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            lineHeight = 20.sp
+                                        ) 
                                     }
                                     
                                     // Refresh button
@@ -356,6 +422,113 @@ private fun ChatBubble(message: ChatMessage) {
                 modifier = Modifier.padding(12.dp),
                 color = if (message.isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.PantryItem>) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Header
+        Text(
+            text = "Quick Insights",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        
+        // Calculate insights
+        val expiringItems = pantryItems.filter { it.getDaysUntilExpiry() in 0..3 }
+        val expiredItems = pantryItems.filter { it.getDaysUntilExpiry() < 0 }
+        val freshItems = pantryItems.filter { it.getDaysUntilExpiry() > 7 }
+        val totalItems = pantryItems.size
+        
+        // Single Row of Insights
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Items Saved (Fresh items in good condition)
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Filled.CheckCircle,
+                iconTint = Color(0xFF4CAF50),
+                value = "${freshItems.size}",
+                label = "Saved",
+                color = Color(0xFF4CAF50)
+            )
+            
+            // Items at Risk (Expiring Soon)
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Filled.Warning,
+                iconTint = Color(0xFFFF9800),
+                value = "${expiringItems.size}",
+                label = "At Risk",
+                color = Color(0xFFFF9800)
+            )
+            
+            // Items Wasted (Expired)
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Filled.Delete,
+                iconTint = MaterialTheme.colorScheme.error,
+                value = "${expiredItems.size}",
+                label = "Wasted",
+                color = MaterialTheme.colorScheme.error
+            )
+            
+            // Total Items
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Filled.Inventory2,
+                iconTint = Primary500,
+                value = "$totalItems",
+                label = "Total",
+                color = Primary500
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactInsightCard(
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconTint: Color,
+    value: String,
+    label: String,
+    color: Color
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.1f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(20.dp),
+                tint = iconTint
+            )
+            Text(
+                text = value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                maxLines = 1
             )
         }
     }

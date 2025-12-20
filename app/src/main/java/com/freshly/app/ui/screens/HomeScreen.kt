@@ -328,7 +328,7 @@ fun HomeScreen(
         // Recommended Recipes Section
         item {
             Text(
-                text = "Recommended Recipes",
+                text = "Recipes",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold
             )

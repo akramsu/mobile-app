@@ -27,6 +27,11 @@ class GeminiApiService {
     
     private val rateLimiter = GeminiRateLimiter()
     
+    init {
+        Log.d(TAG, "GeminiApiService initialized with model: $MODEL_NAME")
+        Log.d(TAG, "API Key configured: ${if (BuildConfig.GEMINI_API_KEY.isNotBlank()) "Yes (${BuildConfig.GEMINI_API_KEY.take(10)}...)" else "No"}")
+    }
+    
     // Recipe generation model - balanced for creative but accurate results
     private val recipeModel = GenerativeModel(
         modelName = MODEL_NAME,
@@ -48,6 +53,18 @@ class GeminiApiService {
             topK = 40
             topP = 0.95f
             maxOutputTokens = 1024  // Shorter chat responses
+        }
+    )
+    
+    // Insights model - optimized for concise insights generation
+    private val insightsModel = GenerativeModel(
+        modelName = MODEL_NAME,
+        apiKey = BuildConfig.GEMINI_API_KEY,
+        generationConfig = generationConfig {
+            temperature = 0.8f      // Balanced creativity
+            topK = 30
+            topP = 0.92f
+            maxOutputTokens = 512   // Short, concise insights
         }
     )
     
@@ -191,8 +208,14 @@ class GeminiApiService {
         return try {
             // Check rate limits
             if (!rateLimiter.canMakeRequest()) {
-                val (dailyRemaining, _) = rateLimiter.getRemainingRequests()
-                return Result.failure(Exception("Daily limit reached ($dailyRemaining remaining)"))
+                val (dailyRemaining, minuteRemaining) = rateLimiter.getRemainingRequests()
+                val message = if (minuteRemaining == 0) {
+                    "Please wait a minute before trying again."
+                } else {
+                    "Daily limit reached. Try again tomorrow."
+                }
+                Log.w(TAG, "Rate limit reached for insights generation")
+                return Result.failure(RateLimitException(message))
             }
             
             // Build pantry data
@@ -222,29 +245,46 @@ class GeminiApiService {
             // Build prompt
             val prompt = GeminiPromptBuilder.buildInsightsPrompt(pantryData, userProfile)
             
-            Log.d(TAG, "Generating insights...")
+            Log.d(TAG, "Generating insights for $userName with ${pantryItems.size} items...")
             
             rateLimiter.recordRequest()
             
-            // Call API
+            // Call API using chat model (1024 tokens)
             val response = chatModel.generateContent(prompt)
             val responseText = response.text ?: ""
             
-            Log.d(TAG, "Received insights: ${responseText.take(100)}...")
+            Log.d(TAG, "Received insights response (${responseText.length} chars)")
+            Log.d(TAG, "Insights response preview: ${responseText.take(200)}...")
             
             // Parse response
             val insights = GeminiResponseParser.parseInsights(responseText)
             
             if (insights.isEmpty()) {
-                return Result.failure(Exception("Failed to generate insights"))
+                Log.e(TAG, "No insights parsed from response. Full response: $responseText")
+                return Result.failure(Exception("Failed to generate insights. The AI returned an unexpected format. Please try again."))
             }
             
-            Log.d(TAG, "Successfully generated ${insights.size} insights")
+            Log.d(TAG, "Successfully generated ${insights.size} insights: ${insights.keys.joinToString()}")
             Result.success(insights)
             
         } catch (e: Exception) {
-            Log.e(TAG, "Insights generation failed", e)
-            Result.failure(e)
+            Log.e(TAG, "Insights generation failed: ${e.message}", e)
+            
+            // Handle specific errors
+            val errorMessage = when {
+                e is RateLimitException -> e.message ?: "Rate limit exceeded"
+                e.message?.contains("429", ignoreCase = true) == true -> 
+                    "Too many requests. Please wait a minute."
+                e.message?.contains("quota", ignoreCase = true) == true -> 
+                    "Daily quota reached. Try again tomorrow."
+                e.message?.contains("API key", ignoreCase = true) == true -> 
+                    "Invalid API key. Please check your configuration."
+                e.message?.contains("network", ignoreCase = true) == true -> 
+                    "Network error. Check your connection."
+                else -> "Failed to generate insights: ${e.message}"
+            }
+            
+            Result.failure(Exception(errorMessage))
         }
     }
     

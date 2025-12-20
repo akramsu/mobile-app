@@ -8,13 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
-/**
- * Singleton manager for Firebase services
- * Handles Firestore and Authentication initialization
- */
+
 object FirebaseManager {
     
-    // Firestore instance
+
     val firestore: FirebaseFirestore by lazy {
         FirebaseFirestore.getInstance().apply {
             firestoreSettings = FirebaseFirestoreSettings.Builder()
@@ -32,17 +29,17 @@ object FirebaseManager {
     private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser
     
-    // User ID (generates anonymous user if not logged in)
+
     val userId: String
         get() = auth.currentUser?.uid ?: ""
     
-    // Check if user is authenticated
+
     val isAuthenticated: Boolean
         get() = auth.currentUser != null
     
-    /**
-     * Sign in anonymously for first-time users
-     */
+
+
+//old anonymous sign in method for dev purposes only (for now)
     suspend fun signInAnonymously(): Result<FirebaseUser> {
         return try {
             val result = auth.signInAnonymously().await()
@@ -84,7 +81,8 @@ object FirebaseManager {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val user = result.user
             if (user != null) {
-                // Update user profile with display name
+                
+                
                 val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
                     .setDisplayName(name)
                     .build()

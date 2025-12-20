@@ -22,6 +22,10 @@ class AIAssistantViewModel : ViewModel() {
     private val pantryRepository = PantryRepository()
     private val userRepository = UserRepository()
     
+    // Pantry items for quick insights
+    val pantryItems: StateFlow<List<PantryItem>> = pantryRepository.items
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    
     // Chat messages
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
@@ -129,6 +133,8 @@ class AIAssistantViewModel : ViewModel() {
                 val pantryItems = pantryRepository.items.first()
                 val user = userRepository.user.first()
                 
+                android.util.Log.d("AIAssistantViewModel", "Generating insights for ${pantryItems.size} items")
+                
                 val result = geminiService.generateInsights(
                     pantryItems,
                     user.name,
@@ -136,14 +142,18 @@ class AIAssistantViewModel : ViewModel() {
                 )
                 
                 if (result.isSuccess) {
-                    _insights.value = result.getOrNull() ?: emptyMap()
+                    val insightsMap = result.getOrNull() ?: emptyMap()
+                    android.util.Log.d("AIAssistantViewModel", "Got ${insightsMap.size} insights: ${insightsMap.keys}")
+                    _insights.value = insightsMap
                     _showInsights.value = true
                 } else {
-                    _errorMessage.value = result.exceptionOrNull()?.message 
-                        ?: "Failed to generate insights"
+                    val error = result.exceptionOrNull()?.message ?: "Failed to generate insights"
+                    android.util.Log.e("AIAssistantViewModel", "Insights generation failed: $error")
+                    _errorMessage.value = error
                 }
                 
             } catch (e: Exception) {
+                android.util.Log.e("AIAssistantViewModel", "Exception generating insights", e)
                 _errorMessage.value = "Error generating insights: ${e.message}"
             } finally {
                 _isLoadingInsights.value = false
