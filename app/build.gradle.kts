@@ -29,10 +29,11 @@ android {
         if (localPropertiesFile.exists()) {
             properties.load(localPropertiesFile.inputStream())
         }
+        // Gemini API Keys - comma-separated list for rotation
         buildConfigField(
             "String",
-            "GEMINI_API_KEY",
-            "\"${properties.getProperty("GEMINI_API_KEY", "")}\""
+            "GEMINI_API_KEYS",
+            "\"${properties.getProperty("GEMINI_API_KEYS", "")}\""
         )
         buildConfigField(
             "String",

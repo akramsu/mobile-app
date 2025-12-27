@@ -16,8 +16,7 @@ data class PantryItem(
     val unit: String,
     val addedDate: String, // LocalDate as String for Parcelize
     val expiryDate: String, // LocalDate as String for Parcelize
-    val imageUrl: String? = null,
-    val notes: String? = null
+    val imageUrl: String? = null
 ) : Parcelable {
     
     fun getDaysUntilExpiry(): Int {
@@ -47,8 +46,7 @@ data class PantryItem(
             "unit" to unit,
             "addedDate" to addedDate,
             "expiryDate" to expiryDate,
-            "imageUrl" to imageUrl,
-            "notes" to notes
+            "imageUrl" to imageUrl
         )
     }
     
@@ -69,8 +67,7 @@ data class PantryItem(
                 unit = map["unit"] as? String ?: "unit",
                 addedDate = map["addedDate"] as? String ?: Clock.System.todayIn(TimeZone.currentSystemDefault()).toString(),
                 expiryDate = map["expiryDate"] as? String ?: Clock.System.todayIn(TimeZone.currentSystemDefault()).toString(),
-                imageUrl = map["imageUrl"] as? String,
-                notes = map["notes"] as? String
+                imageUrl = map["imageUrl"] as? String
             )
         }
     }

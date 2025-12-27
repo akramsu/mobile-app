@@ -357,7 +357,11 @@ fun HomeScreen(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = recipe.imageUrl, fontSize = 60.sp)
+                                // Display emoji icon for recipe
+                                Text(
+                                    text = recipe.imageUrl.ifEmpty { "🍽️" },
+                                    fontSize = 72.sp
+                                )
                             }
                             
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -368,9 +372,10 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Perfect for your pantry items",
+                                    text = recipe.description.take(80) + if (recipe.description.length > 80) "..." else "",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                    maxLines = 2
                                 )
                             }
                         }

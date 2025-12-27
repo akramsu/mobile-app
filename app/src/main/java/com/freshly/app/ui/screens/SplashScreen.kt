@@ -72,22 +72,13 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // App logo with white background for visibility on green
-                Surface(
-                    modifier = Modifier.size(220.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    shadowElevation = 16.dp
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "Freshly Logo",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                    )
-                }
+                // App logo - clean high quality display
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Freshly Logo",
+                    modifier = Modifier.size(160.dp),
+                    contentScale = ContentScale.Fit
+                )
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "",

@@ -22,7 +22,7 @@ object GeminiPromptBuilder {
 2 recipes: $ingredientList$dietary
 JSON:
 [{"title":"","description":"","cookTime":25,"servings":2,"difficulty":"Easy","ingredients":[{"name":"","amount":"","isMatched":true}],"steps":[""],"tags":[""],"youtubeVideoLink":""}]
-For youtubeVideoLink: Use format https://www.youtube.com/results?search_query=RECIPE_NAME+recipe (replace spaces with +)
+For youtubeVideoLink: ALWAYS return a YouTube search URL in this format: https://www.youtube.com/results?search_query=RECIPE_NAME+recipe (replace spaces with +). Example: "Chicken Stir Fry" becomes https://www.youtube.com/results?search_query=Chicken+Stir+Fry+recipe
 3 steps max, brief
         """.trimIndent()
     }
@@ -125,9 +125,10 @@ Generate brief recipe:
 - 3 simple steps
 - 2-3 cooking tips
 - cookTime (minutes)
+- YouTube search link: Return YouTube search URL in format: https://www.youtube.com/results?search_query=$title+recipe (replace spaces with +)
 
 JSON:
-{"description":"","steps":[""],"tips":[""],"cookTime":25}
+{"description":"","steps":[""],"tips":[""],"cookTime":25,"youtubeVideoLink":""}
         """.trimIndent()
     }
 }

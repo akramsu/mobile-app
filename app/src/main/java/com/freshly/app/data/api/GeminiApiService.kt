@@ -1,9 +1,10 @@
 package com.freshly.app.data.api
 
+import android.content.Context
 import android.util.Log
-import com.freshly.app.BuildConfig
 import com.freshly.app.data.model.PantryItem
 import com.freshly.app.data.model.Recipe
+import com.freshly.app.utils.GeminiApiKeyManager
 import com.freshly.app.utils.GeminiRateLimiter
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
@@ -15,9 +16,9 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Service for interacting with Gemini AI API
- * Uses gemini-1.5-flash model for FREE tier (1,500 requests/day)
+ * Uses gemini-2.5-flash model with automatic API key rotation
  */
-class GeminiApiService {
+class GeminiApiService(private val context: Context) {
     
     companion object {
         private const val TAG = "GeminiApiService"
@@ -29,42 +30,40 @@ class GeminiApiService {
     
     init {
         Log.d(TAG, "GeminiApiService initialized with model: $MODEL_NAME")
-        Log.d(TAG, "API Key configured: ${if (BuildConfig.GEMINI_API_KEY.isNotBlank()) "Yes (${BuildConfig.GEMINI_API_KEY.take(10)}...)" else "No"}")
+        Log.d(TAG, "Available API keys: ${GeminiApiKeyManager.getKeyCount()}")
     }
     
-    // Recipe generation model - balanced for creative but accurate results
-    private val recipeModel = GenerativeModel(
+    // Create models with current API key
+    private fun createRecipeModel() = GenerativeModel(
         modelName = MODEL_NAME,
-        apiKey = BuildConfig.GEMINI_API_KEY,
+        apiKey = GeminiApiKeyManager.getCurrentApiKey(),
         generationConfig = generationConfig {
-            temperature = 0.7f      // Less creative = faster
-            topK = 20               // Reduced for speed
+            temperature = 0.7f
+            topK = 20
             topP = 0.9f
-            maxOutputTokens = 2048  // Reduced for 2 shorter recipes
+            maxOutputTokens = 2048
         }
     )
     
-    // Chat model - more conversational
-    private val chatModel = GenerativeModel(
+    private fun createChatModel() = GenerativeModel(
         modelName = MODEL_NAME,
-        apiKey = BuildConfig.GEMINI_API_KEY,
+        apiKey = GeminiApiKeyManager.getCurrentApiKey(),
         generationConfig = generationConfig {
-            temperature = 0.9f      // More natural conversations
+            temperature = 0.9f
             topK = 40
             topP = 0.95f
-            maxOutputTokens = 1024  // Shorter chat responses
+            maxOutputTokens = 1024
         }
     )
     
-    // Insights model - optimized for concise insights generation
-    private val insightsModel = GenerativeModel(
+    private fun createInsightsModel() = GenerativeModel(
         modelName = MODEL_NAME,
-        apiKey = BuildConfig.GEMINI_API_KEY,
+        apiKey = GeminiApiKeyManager.getCurrentApiKey(),
         generationConfig = generationConfig {
-            temperature = 0.8f      // Balanced creativity
+            temperature = 0.8f
             topK = 30
             topP = 0.92f
-            maxOutputTokens = 512   // Short, concise insights
+            maxOutputTokens = 512
         }
     )
     
@@ -102,8 +101,20 @@ class GeminiApiService {
             // Record request before making it
             rateLimiter.recordRequest()
             
-            // Call API
-            val response = recipeModel.generateContent(prompt)
+            // Call API with automatic key rotation on failure
+            val response = try {
+                createRecipeModel().generateContent(prompt)
+            } catch (e: Exception) {
+                // Check if rate limit error and try rotating key
+                if (GeminiApiKeyManager.isRateLimitError(e) && GeminiApiKeyManager.getKeyCount() > 1) {
+                    Log.w(TAG, "Rate limit hit, rotating to next API key...")
+                    GeminiApiKeyManager.rotateToNextKey(context)
+                    // Retry with new key
+                    createRecipeModel().generateContent(prompt)
+                } else {
+                    throw e
+                }
+            }
             val responseText = response.text ?: ""
             
             Log.d(TAG, "Received response: ${responseText.take(200)}...")
@@ -171,7 +182,7 @@ class GeminiApiService {
         rateLimiter.recordRequest()
         
         // Stream response
-        chatModel.generateContentStream(prompt)
+        createChatModel().generateContentStream(prompt)
             .collect { chunk ->
                 chunk.text?.let { text ->
                     emit(text)
@@ -250,22 +261,45 @@ class GeminiApiService {
             rateLimiter.recordRequest()
             
             // Call API using chat model (1024 tokens)
-            val response = chatModel.generateContent(prompt)
-            val responseText = response.text ?: ""
-            
-            Log.d(TAG, "Received insights response (${responseText.length} chars)")
-            Log.d(TAG, "Insights response preview: ${responseText.take(200)}...")
-            
-            // Parse response
-            val insights = GeminiResponseParser.parseInsights(responseText)
-            
-            if (insights.isEmpty()) {
-                Log.e(TAG, "No insights parsed from response. Full response: $responseText")
-                return Result.failure(Exception("Failed to generate insights. The AI returned an unexpected format. Please try again."))
+            try {
+                val response = createChatModel().generateContent(prompt)
+                val responseText = response.text ?: ""
+                
+                Log.d(TAG, "Received insights response (${responseText.length} chars)")
+                Log.d(TAG, "Insights response preview: ${responseText.take(200)}...")
+                
+                // Parse response
+                val insights = GeminiResponseParser.parseInsights(responseText)
+                
+                if (insights.isEmpty()) {
+                    Log.e(TAG, "No insights parsed from response. Full response: $responseText")
+                    return Result.failure(Exception("Failed to generate insights. The AI returned an unexpected format. Please try again."))
+                }
+                
+                return Result.success(insights)
+            } catch (e: Exception) {
+                // Check if it's a rate limit error and rotate key
+                if (GeminiApiKeyManager.isRateLimitError(e)) {
+                    Log.w(TAG, "Rate limit hit, rotating API key and retrying...")
+                    GeminiApiKeyManager.rotateToNextKey(context)
+                    
+                    // Retry with new key
+                    val response = createChatModel().generateContent(prompt)
+                    val responseText = response.text ?: ""
+                    
+                    // Parse response
+                    val insights = GeminiResponseParser.parseInsights(responseText)
+                    
+                    if (insights.isEmpty()) {
+                        Log.e(TAG, "No insights parsed from response after retry. Full response: $responseText")
+                        return Result.failure(Exception("Failed to generate insights. The AI returned an unexpected format. Please try again."))
+                    }
+                    
+                    return Result.success(insights)
+                } else {
+                    throw e
+                }
             }
-            
-            Log.d(TAG, "Successfully generated ${insights.size} insights: ${insights.keys.joinToString()}")
-            Result.success(insights)
             
         } catch (e: Exception) {
             Log.e(TAG, "Insights generation failed: ${e.message}", e)
@@ -325,11 +359,28 @@ class GeminiApiService {
             
             rateLimiter.recordRequest()
             
-            val response = recipeModel.generateContent(prompt)
-            val text = response.text ?: ""
-            
-            Log.d(TAG, "Detailed recipe generated successfully")
-            Result.success(text)
+            try {
+                val response = createRecipeModel().generateContent(prompt)
+                val text = response.text ?: ""
+                
+                Log.d(TAG, "Detailed recipe generated successfully")
+                Result.success(text)
+            } catch (e: Exception) {
+                // Check if it's a rate limit error and rotate key
+                if (GeminiApiKeyManager.isRateLimitError(e)) {
+                    Log.w(TAG, "Rate limit hit, rotating API key and retrying...")
+                    GeminiApiKeyManager.rotateToNextKey(context)
+                    
+                    // Retry with new key
+                    val response = createRecipeModel().generateContent(prompt)
+                    val text = response.text ?: ""
+                    
+                    Log.d(TAG, "Detailed recipe generated successfully after key rotation")
+                    return Result.success(text)
+                } else {
+                    throw e
+                }
+            }
             
         } catch (e: Exception) {
             Log.e(TAG, "Error generating detailed recipe", e)

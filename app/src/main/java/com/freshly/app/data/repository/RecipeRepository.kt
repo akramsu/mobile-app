@@ -1,5 +1,6 @@
 package com.freshly.app.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.freshly.app.data.api.GeminiApiService
 import com.freshly.app.data.firebase.FirebaseManager
@@ -14,20 +15,20 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
 import java.util.*
 
-class RecipeRepository private constructor() {
+class RecipeRepository private constructor(context: Context) {
     
     companion object {
         @Volatile
         private var INSTANCE: RecipeRepository? = null
         
-        fun getInstance(): RecipeRepository {
+        fun getInstance(context: Context): RecipeRepository {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: RecipeRepository().also { INSTANCE = it }
+                INSTANCE ?: RecipeRepository(context.applicationContext).also { INSTANCE = it }
             }
         }
     }
     
-    private val geminiService = GeminiApiService()
+    private val geminiService = GeminiApiService(context)
     private val recipeCache = mutableMapOf<String, Pair<List<Recipe>, Long>>()
     private val cacheExpiryMs = 24 * 60 * 60 * 1000L // 24 hours
     

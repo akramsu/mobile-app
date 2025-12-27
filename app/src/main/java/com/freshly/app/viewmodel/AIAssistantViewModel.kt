@@ -1,6 +1,7 @@
 package com.freshly.app.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshly.app.data.api.GeminiApiService
 import com.freshly.app.data.model.PantryItem
@@ -16,9 +17,9 @@ import kotlinx.coroutines.launch
  * ViewModel for AI Assistant screen
  * Handles chat messages, streaming responses, and insights generation
  */
-class AIAssistantViewModel : ViewModel() {
+class AIAssistantViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val geminiService = GeminiApiService()
+    private val geminiService = GeminiApiService(application.applicationContext)
     private val pantryRepository = PantryRepository()
     private val userRepository = UserRepository()
     

@@ -448,6 +448,16 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Total Items
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Filled.Inventory2,
+                iconTint = Primary500,
+                value = "$totalItems",
+                label = "Total",
+                color = Primary500
+            )
+            
             // Items Saved (Fresh items in good condition)
             CompactInsightCard(
                 modifier = Modifier.weight(1f),
@@ -476,16 +486,6 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
                 value = "${expiredItems.size}",
                 label = "Wasted",
                 color = MaterialTheme.colorScheme.error
-            )
-            
-            // Total Items
-            CompactInsightCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.Inventory2,
-                iconTint = Primary500,
-                value = "$totalItems",
-                label = "Total",
-                color = Primary500
             )
         }
     }

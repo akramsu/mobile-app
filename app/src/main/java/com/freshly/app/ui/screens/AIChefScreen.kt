@@ -108,7 +108,9 @@ fun AIChefScreen(
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold
                                     )
-                                    if (item.getDaysUntilExpiry() <= 3) {
+                                    // Only show "Expiring soon" for items expiring in 0-3 days (not expired)
+                                    val daysUntilExpiry = item.getDaysUntilExpiry()
+                                    if (daysUntilExpiry in 0..3) {
                                         Text(
                                             text = "⚡ Expiring soon",
                                             style = MaterialTheme.typography.bodySmall,

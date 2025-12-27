@@ -1,7 +1,8 @@
 package com.freshly.app.viewmodel
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshly.app.data.model.PantryItem
 import com.freshly.app.data.model.Recipe
@@ -12,13 +13,17 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
-class AIChefViewModel : ViewModel() {
+class AIChefViewModel(application: Application) : AndroidViewModel(application) {
     
     private val pantryRepository = PantryRepository()
-    private val recipeRepository = RecipeRepository.getInstance()
+    private val recipeRepository = RecipeRepository.getInstance(application.applicationContext)
     private val userRepository = UserRepository()
     
     val pantryItems: StateFlow<List<PantryItem>> = pantryRepository.items
+        .map { items -> 
+            // Filter out expired items - only show items that haven't expired
+            items.filter { it.getDaysUntilExpiry() >= 0 }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

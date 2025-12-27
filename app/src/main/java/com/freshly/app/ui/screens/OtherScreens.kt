@@ -43,7 +43,7 @@ import com.freshly.app.ui.components.SecondaryButton
 import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.ui.theme.Warning500
-import com.freshly.app.utils.SmartProductScanner
+import com.freshly.app.utils.GeminiVisionScanner
 import com.freshly.app.viewmodel.PantryViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -75,13 +75,16 @@ fun AddItemScreen(
     var quantity by remember { mutableStateOf("1") }
     var unit by remember { mutableStateOf("items") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var secondImageUri by remember { mutableStateOf<Uri?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var isProcessingImage by remember { mutableStateOf(false) }
+    var isProcessingSecondPhoto by remember { mutableStateOf(false) }
     var extractionConfidence by remember { mutableStateOf(0f) }
+    var showSecondPhotoOption by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     
-    // Use Smart Scanner: tries barcode first, then falls back to Gemini Vision
-    val smartScanner = remember { SmartProductScanner(context) }
+    // Use Gemini Vision Scanner only - fast and accurate
+    val visionScanner = remember { GeminiVisionScanner(context) }
     
     // Camera permission
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -100,7 +103,7 @@ fun AddItemScreen(
         )
     }
     
-    // Camera launcher with Gemini Vision AI processing
+    // First camera launcher - scans front of product
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -108,11 +111,10 @@ fun AddItemScreen(
             imageUri = photoUri
             isProcessingImage = true
             
-            // Process image with Smart Scanner (barcode + Gemini Vision AI)
+            // Process first image with Gemini Vision AI
             scope.launch {
                 try {
-                    // Try barcode first, fall back to Gemini if needed
-                    val extractedInfo = smartScanner.scan(photoUri)
+                    val extractedInfo = visionScanner.scanProduct(photoUri)
                     
                     // Auto-fill form fields with extracted data
                     extractedInfo.name?.let { name = it }
@@ -122,11 +124,60 @@ fun AddItemScreen(
                     extractedInfo.category?.let { category = it }
                     extractionConfidence = extractedInfo.confidence
                     
+                    // Show second photo option if expiry date not found
+                    showSecondPhotoOption = extractedInfo.expiryDate == null
+                    
                 } catch (e: Exception) {
                     e.printStackTrace()
                     extractionConfidence = 0f
+                    showSecondPhotoOption = true
                 } finally {
                     isProcessingImage = false
+                }
+            }
+        }
+    }
+    
+    // Second photo URI
+    val secondPhotoUri = remember {
+        val photoFile = File.createTempFile(
+            "IMG_BACK_${System.currentTimeMillis()}",
+            ".jpg",
+            context.cacheDir
+        )
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            photoFile
+        )
+    }
+    
+    // Second camera launcher - scans back for expiry date
+    val secondCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            secondImageUri = secondPhotoUri
+            isProcessingSecondPhoto = true
+            
+            // Process second image for missing information
+            scope.launch {
+                try {
+                    val secondInfo = visionScanner.scanProduct(secondPhotoUri)
+                    
+                    // Merge information: prefer second photo for expiry date
+                    secondInfo.expiryDate?.let { expiryDate = it }
+                    secondInfo.quantity?.takeIf { quantity == "1" }?.let { quantity = it }
+                    secondInfo.unit?.takeIf { unit == "items" }?.let { unit = it }
+                    
+                    // Update confidence as average
+                    extractionConfidence = (extractionConfidence + secondInfo.confidence) / 2
+                    showSecondPhotoOption = false
+                    
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally{
+                    isProcessingSecondPhoto = false
                 }
             }
         }
@@ -194,7 +245,7 @@ fun AddItemScreen(
                                             modifier = Modifier.size(36.dp)
                                         )
                                         Text(
-                                            text = "Smart scanning...",
+                                            text = "AI scanning...",
                                             color = Color.White,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Medium
@@ -305,10 +356,125 @@ fun AddItemScreen(
                                     color = AI500
                                 )
                                 Text(
-                                    text = "Barcode + AI smart scanning",
+                                    text = "Fast AI scanning",
                                     fontSize = 12.sp,
                                     color = Color.Gray
                                 )
+                            }
+                        }
+                    }
+                    
+                    // Second photo section - for expiry date on back
+                    if (showSecondPhotoOption && !isProcessingImage) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (cameraPermissionState.status.isGranted) {
+                                        secondCameraLauncher.launch(secondPhotoUri)
+                                    } else {
+                                        cameraPermissionState.launchPermissionRequest()
+                                    }
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = Warning500.copy(alpha = 0.1f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 1.5.dp,
+                                color = Warning500.copy(alpha = 0.4f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.AddAPhoto,
+                                    contentDescription = "Scan back",
+                                    tint = Warning500,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "📅 Expiry Date Not Found",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Warning500
+                                    )
+                                    Text(
+                                        text = "Tap to scan back of product",
+                                        fontSize = 11.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronRight,
+                                    contentDescription = null,
+                                    tint = Warning500
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Show second photo with processing overlay
+                    if (secondImageUri != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.LightGray)
+                        ) {
+                            AsyncImage(
+                                model = secondImageUri,
+                                contentDescription = "Back of product",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            
+                            if (isProcessingSecondPhoto) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.7f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = Primary500,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Text(
+                                            text = "Extracting expiry...",
+                                            color = Color.White,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Label
+                            if (!isProcessingSecondPhoto) {
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(6.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFF4CAF50).copy(alpha = 0.9f)
+                                ) {
+                                    Text(
+                                        text = "Back Photo",
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
                         }
                     }
@@ -329,7 +495,7 @@ fun AddItemScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "Scans barcode for instant lookup, or uses AI to analyze the entire product - even with info in different locations",
+                                text = "AI analyzes the entire product - even with info in different locations. Can scan front & back separately.",
                                 fontSize = 11.sp,
                                 color = Color.Gray,
                                 lineHeight = 14.sp
@@ -603,8 +769,7 @@ fun AddItemScreen(
                                         unit = unit,
                                         addedDate = purchaseDate,
                                         expiryDate = expiryDate,
-                                        imageUrl = imageUri?.toString(),
-                                        notes = null
+                                        imageUrl = imageUri?.toString()
                                     )
                                     viewModel.repository.addItem(newItem)
                                     onItemAdded()
@@ -634,10 +799,20 @@ private fun AIRecipeContentCard(aiContent: String) {
                 }
             
             val json = org.json.JSONObject(jsonContent)
-            Triple(
-                json.optString("description", ""),
-                json.optJSONArray("steps"),
-                json.optJSONArray("tips")
+            
+            // Parse data including YouTube link
+            data class ParsedRecipeData(
+                val description: String,
+                val steps: org.json.JSONArray?,
+                val tips: org.json.JSONArray?,
+                val youtubeLink: String?
+            )
+            
+            ParsedRecipeData(
+                description = json.optString("description", ""),
+                steps = json.optJSONArray("steps"),
+                tips = json.optJSONArray("tips"),
+                youtubeLink = json.optString("youtubeVideoLink").takeIf { it.isNotBlank() }
             )
         } catch (e: Exception) {
             null
@@ -645,7 +820,7 @@ private fun AIRecipeContentCard(aiContent: String) {
     }
     
     if (parsedData != null) {
-        val (description, stepsArray, tipsArray) = parsedData
+        val context = androidx.compose.ui.platform.LocalContext.current
         
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -673,16 +848,16 @@ private fun AIRecipeContentCard(aiContent: String) {
                     )
                 }
                 
-                if (description.isNotEmpty()) {
+                if (parsedData.description.isNotEmpty()) {
                     Text(
-                        text = description,
+                        text = parsedData.description,
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 20.sp
                     )
                 }
                 
-                if (stepsArray != null && stepsArray.length() > 0) {
+                if (parsedData.steps != null && parsedData.steps.length() > 0) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "Quick Steps:",
@@ -690,7 +865,7 @@ private fun AIRecipeContentCard(aiContent: String) {
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        for (i in 0 until stepsArray.length()) {
+                        for (i in 0 until parsedData.steps.length()) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
                                     text = "${i + 1}.",
@@ -699,7 +874,7 @@ private fun AIRecipeContentCard(aiContent: String) {
                                     color = AI500
                                 )
                                 Text(
-                                    text = stepsArray.getString(i),
+                                    text = parsedData.steps.getString(i),
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     lineHeight = 18.sp,
@@ -710,7 +885,7 @@ private fun AIRecipeContentCard(aiContent: String) {
                     }
                 }
                 
-                if (tipsArray != null && tipsArray.length() > 0) {
+                if (parsedData.tips != null && parsedData.tips.length() > 0) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             text = "💡 Tips:",
@@ -718,15 +893,34 @@ private fun AIRecipeContentCard(aiContent: String) {
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        for (i in 0 until tipsArray.length()) {
+                        for (i in 0 until parsedData.tips.length()) {
                             Text(
-                                text = "• ${tipsArray.getString(i)}",
+                                text = "• ${parsedData.tips.getString(i)}",
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 lineHeight = 18.sp
                             )
                         }
                     }
+                }
+                
+                // YouTube Search Button - Opens YouTube search with recipe name
+                if (!parsedData.youtubeLink.isNullOrBlank()) {
+                    PrimaryButton(
+                        text = "🎥 Find Recipe on YouTube",
+                        onClick = {
+                            try {
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(parsedData.youtubeLink)
+                                )
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                android.util.Log.e("AIRecipeContent", "Error opening YouTube search: ${parsedData.youtubeLink}", e)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -754,8 +948,9 @@ fun RecipeDetailScreen(
     onBack: () -> Unit,
     generateAIContent: Boolean = false
 ) {
-    val recipeRepository = remember { com.freshly.app.data.repository.RecipeRepository.getInstance() }
-    val geminiService = remember { com.freshly.app.data.api.GeminiApiService() }
+    val context = LocalContext.current
+    val recipeRepository = remember { com.freshly.app.data.repository.RecipeRepository.getInstance(context) }
+    val geminiService = remember { com.freshly.app.data.api.GeminiApiService(context) }
     var recipe by remember { mutableStateOf<com.freshly.app.data.model.Recipe?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var aiGeneratedContent by remember { mutableStateOf<String?>(null) }
@@ -1040,23 +1235,6 @@ fun RecipeDetailScreen(
                                 }
                             }
                         }
-                    }
-                    
-                    // YouTube Video Button
-                    if (!currentRecipe.youtubeVideoLink.isNullOrBlank()) {
-                        val context = androidx.compose.ui.platform.LocalContext.current
-                        SecondaryButton(
-                            text = "🎥 Watch on YouTube",
-                            onClick = {
-                                try {
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(currentRecipe.youtubeVideoLink))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    android.util.Log.e("RecipeDetail", "Error opening YouTube link: ${currentRecipe.youtubeVideoLink}", e)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                     
                     // Save Recipe Button

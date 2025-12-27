@@ -8,7 +8,7 @@ import android.util.Log
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.google.ai.client.generativeai.type.generationConfig
-import com.freshly.app.BuildConfig
+import com.freshly.app.utils.GeminiApiKeyManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -35,16 +35,22 @@ class GeminiVisionScanner(private val context: Context) {
         private const val MAX_IMAGE_SIZE = 1024 // Max dimension in pixels
     }
     
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-2.0-flash-exp",
-        apiKey = BuildConfig.GEMINI_API_KEY,
-        generationConfig = generationConfig {
-            temperature = 0.2f // Lower temperature for more consistent results
-            topK = 32
-            topP = 0.8f
-            maxOutputTokens = 1024
-        }
-    )
+    init {
+        GeminiApiKeyManager.initialize(context)
+    }
+    
+    private fun createVisionModel(): GenerativeModel {
+        return GenerativeModel(
+            modelName = "gemini-2.5-flash",
+            apiKey = GeminiApiKeyManager.getCurrentApiKey(),
+            generationConfig = generationConfig {
+                temperature = 0.2f // Lower temperature for more consistent results
+                topK = 32
+                topP = 0.8f
+                maxOutputTokens = 1024
+            }
+        )
+    }
     
     /**
      * Scan product image and extract structured information
@@ -67,17 +73,31 @@ class GeminiVisionScanner(private val context: Context) {
             // Create the prompt for Gemini
             val prompt = createProductScanPrompt()
             
-            // Call Gemini Vision API
+            // Call Gemini Vision API with retry logic
             val response = try {
                 val content = content {
                     image(bitmap)
                     text(prompt)
                 }
                 
-                generativeModel.generateContent(content)
+                createVisionModel().generateContent(content)
             } catch (e: Exception) {
-                Log.e(TAG, "Gemini API call failed", e)
-                return@withContext ExtractedItemInfo(confidence = 0f)
+                // Check if it's a rate limit error and rotate key
+                if (GeminiApiKeyManager.isRateLimitError(e)) {
+                    Log.w(TAG, "Rate limit hit, rotating API key and retrying...")
+                    GeminiApiKeyManager.rotateToNextKey(context)
+                    
+                    // Retry with new key
+                    val content = content {
+                        image(bitmap)
+                        text(prompt)
+                    }
+                    
+                    createVisionModel().generateContent(content)
+                } else {
+                    Log.e(TAG, "Gemini API call failed", e)
+                    return@withContext ExtractedItemInfo(confidence = 0f)
+                }
             }
             
             // Parse the response
