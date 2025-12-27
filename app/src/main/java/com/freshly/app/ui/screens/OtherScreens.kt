@@ -43,7 +43,7 @@ import com.freshly.app.ui.components.SecondaryButton
 import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.ui.theme.Warning500
-import com.freshly.app.utils.TextExtractor
+import com.freshly.app.utils.SmartProductScanner
 import com.freshly.app.viewmodel.PantryViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -79,7 +79,9 @@ fun AddItemScreen(
     var isProcessingImage by remember { mutableStateOf(false) }
     var extractionConfidence by remember { mutableStateOf(0f) }
     val scope = rememberCoroutineScope()
-    val textExtractor = remember { TextExtractor(context) }
+    
+    // Use Smart Scanner: tries barcode first, then falls back to Gemini Vision
+    val smartScanner = remember { SmartProductScanner(context) }
     
     // Camera permission
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -98,7 +100,7 @@ fun AddItemScreen(
         )
     }
     
-    // Camera launcher with OCR processing
+    // Camera launcher with Gemini Vision AI processing
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -106,10 +108,11 @@ fun AddItemScreen(
             imageUri = photoUri
             isProcessingImage = true
             
-            // Process image with ML Kit OCR
+            // Process image with Smart Scanner (barcode + Gemini Vision AI)
             scope.launch {
                 try {
-                    val extractedInfo = textExtractor.extractTextFromImage(photoUri)
+                    // Try barcode first, fall back to Gemini if needed
+                    val extractedInfo = smartScanner.scan(photoUri)
                     
                     // Auto-fill form fields with extracted data
                     extractedInfo.name?.let { name = it }
@@ -191,7 +194,7 @@ fun AddItemScreen(
                                             modifier = Modifier.size(36.dp)
                                         )
                                         Text(
-                                            text = "Scanning label...",
+                                            text = "Smart scanning...",
                                             color = Color.White,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Medium
@@ -296,13 +299,13 @@ fun AddItemScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Tap to Scan Product Label",
+                                    text = "Tap to Scan Product",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = AI500
                                 )
                                 Text(
-                                    text = "Auto-fill details from packaging",
+                                    text = "Barcode + AI smart scanning",
                                     fontSize = 12.sp,
                                     color = Color.Gray
                                 )
@@ -326,7 +329,7 @@ fun AddItemScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "Capture the product label to auto-fill name, expiry date, and more",
+                                text = "Scans barcode for instant lookup, or uses AI to analyze the entire product - even with info in different locations",
                                 fontSize = 11.sp,
                                 color = Color.Gray,
                                 lineHeight = 14.sp
