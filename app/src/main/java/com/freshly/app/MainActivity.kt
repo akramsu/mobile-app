@@ -79,7 +79,6 @@ fun FreshlyApp() {
             
             val isAuthenticated = FirebaseManager.isAuthenticated
             
-            // Check and update daily streak if authenticated
             if (isAuthenticated) {
                 try {
                     val userRepository = UserRepository()

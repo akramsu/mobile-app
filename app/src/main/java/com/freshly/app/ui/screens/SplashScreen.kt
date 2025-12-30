@@ -72,7 +72,7 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // App logo - clean high quality display
+                // App logo
                 Image(
                     painter = painterResource(id = R.drawable.logo),
                     contentDescription = "Freshly Logo",

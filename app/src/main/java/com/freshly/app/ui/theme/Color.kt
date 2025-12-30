@@ -2,7 +2,6 @@ package com.freshly.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// FreshCore Color Tokens - Exact match from design system
 val Primary500 = Color(0xFF41B37C)
 val Primary700 = Color(0xFF2D8A5E)
 val Warning = Color(0xFFFFB547)
@@ -19,8 +18,6 @@ val BgDark = Color(0xFF121212)
 val SurfaceDark = Color(0xFF1A1A1A)
 val TextDark = Color(0xFFE0E0E0)
 val Text200Dark = Color(0xFFB0B0B0)
-
-// Additional semantic colors
 val Success = Primary500
 val Error = Danger
 val OnPrimary = Color.White
