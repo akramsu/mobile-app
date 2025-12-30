@@ -16,7 +16,8 @@ data class Recipe(
     val steps: List<String>,
     val matchedIngredients: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
-    val youtubeVideoLink: String? = null
+    val youtubeVideoLink: String? = null,
+    val savedAt: Long = System.currentTimeMillis()
 ) : Parcelable {
     
     /**
@@ -35,7 +36,8 @@ data class Recipe(
             "steps" to steps,
             "matchedIngredients" to matchedIngredients,
             "tags" to tags,
-            "youtubeVideoLink" to youtubeVideoLink
+            "youtubeVideoLink" to youtubeVideoLink,
+            "savedAt" to savedAt
         )
     }
     
@@ -60,7 +62,8 @@ data class Recipe(
                 steps = (map["steps"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
                 matchedIngredients = (map["matchedIngredients"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
                 tags = (map["tags"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
-                youtubeVideoLink = map["youtubeVideoLink"] as? String
+                youtubeVideoLink = map["youtubeVideoLink"] as? String,
+                savedAt = (map["savedAt"] as? Long) ?: System.currentTimeMillis()
             )
         }
     }

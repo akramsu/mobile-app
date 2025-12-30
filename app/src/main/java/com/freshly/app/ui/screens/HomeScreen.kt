@@ -3,6 +3,7 @@ package com.freshly.app.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -327,13 +328,28 @@ fun HomeScreen(
             }
         }
         
-        // Recipes Section
+        // Recent Recipes Section
         item {
-            Text(
-                text = "Recipes",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Recent Recipes",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (recommendedRecipes.isNotEmpty()) {
+                    Text(
+                        text = "See all",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Primary500,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable { onSearchClick() }
+                    )
+                }
+            }
         }
         
         item {

@@ -287,15 +287,16 @@ class RecipeRepository private constructor(context: Context) {
         }
         
         try {
-            Log.d("RecipeRepository", "Fetching saved recipes from Firebase...")
+            Log.d("RecipeRepository", "Fetching recent saved recipes from Firebase...")
             
-            // Fetch saved recipes once (no listener)
+            // Fetch only the most recent 5 saved recipes, ordered by savedAt timestamp
             val snapshot = FirebaseManager.getRecipesCollection(userId)
-                .limit(4)
+                .orderBy("savedAt", Query.Direction.DESCENDING)
+                .limit(5)
                 .get()
                 .await()
             
-            val savedRecipes = snapshot.documents.mapNotNull { doc ->
+            val recentRecipes = snapshot.documents.mapNotNull { doc ->
                 try {
                     doc.data?.let { Recipe.fromMap(it) }
                 } catch (e: Exception) {
@@ -304,16 +305,16 @@ class RecipeRepository private constructor(context: Context) {
                 }
             }
             
-            if (savedRecipes.isNotEmpty()) {
-                Log.d("RecipeRepository", "Found ${savedRecipes.size} saved recipes")
-                emit(savedRecipes)
+            if (recentRecipes.isNotEmpty()) {
+                Log.d("RecipeRepository", "Found ${recentRecipes.size} recent recipes")
+                emit(recentRecipes)
             } else {
                 Log.d("RecipeRepository", "No saved recipes found, using fallback")
                 emit(getRecommendedRecipesFallback())
             }
             
         } catch (e: Exception) {
-            Log.e("RecipeRepository", "Error fetching saved recipes", e)
+            Log.e("RecipeRepository", "Error fetching recent recipes", e)
             emit(getRecommendedRecipesFallback())
         }
     }

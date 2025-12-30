@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,6 +39,20 @@ fun SavedRecipesScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val hasMoreData by viewModel.hasMoreData.collectAsState()
     val listState = rememberLazyListState()
+    var searchQuery by remember { mutableStateOf("") }
+    
+    // Filter recipes based on search query
+    val filteredRecipes = remember(recipes, searchQuery) {
+        if (searchQuery.isBlank()) {
+            recipes
+        } else {
+            recipes.filter { recipe ->
+                recipe.title.contains(searchQuery, ignoreCase = true) ||
+                recipe.description.contains(searchQuery, ignoreCase = true) ||
+                recipe.ingredients.any { it.name.contains(searchQuery, ignoreCase = true) }
+            }
+        }
+    }
     
     // Trigger pagination when scrolling near the end
     LaunchedEffect(listState) {
@@ -75,6 +90,28 @@ fun SavedRecipesScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Search bar
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Search recipes, ingredients...") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search"
+                                )
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Primary500,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+                    
                     // Header with count
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -84,7 +121,7 @@ fun SavedRecipesScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "${recipes.size} recipe${if (recipes.size != 1) "s" else ""} saved",
+                                text = "${filteredRecipes.size} recipe${if (filteredRecipes.size != 1) "s" else ""} ${if (searchQuery.isNotBlank()) "found" else "saved"}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -92,7 +129,7 @@ fun SavedRecipesScreen(
                     }
                     
                     // Recipe cards
-                    items(recipes, key = { it.id }) { recipe ->
+                    items(filteredRecipes, key = { it.id }) { recipe ->
                         SavedRecipeCard(
                             recipe = recipe,
                             onClick = { onRecipeClick(recipe.id) }

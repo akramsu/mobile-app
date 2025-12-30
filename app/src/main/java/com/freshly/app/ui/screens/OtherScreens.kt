@@ -6,6 +6,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -960,25 +961,6 @@ private fun AIRecipeContentCard(aiContent: String) {
                         }
                     }
                 }
-                
-                // YouTube Search Button - Opens YouTube search with recipe name
-                if (!parsedData.youtubeLink.isNullOrBlank()) {
-                    PrimaryButton(
-                        text = "🎥 Find Recipe on YouTube",
-                        onClick = {
-                            try {
-                                val intent = android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse(parsedData.youtubeLink)
-                                )
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                android.util.Log.e("AIRecipeContent", "Error opening YouTube search: ${parsedData.youtubeLink}", e)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
             }
         }
     } else {
@@ -1143,6 +1125,49 @@ fun RecipeDetailScreen(
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
+                        }
+                    }
+                    
+                    // YouTube Search Button
+                    OutlinedButton(
+                        onClick = {
+                            val searchQuery = android.net.Uri.encode(currentRecipe.title + " recipe")
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://www.youtube.com/results?search_query=$searchQuery")
+                            )
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFFFF0000).copy(alpha = 0.05f),
+                            contentColor = Color(0xFFFF0000)
+                        ),
+                        border = BorderStroke(1.5.dp, Color(0xFFFF0000).copy(alpha = 0.3f))
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "▶",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Column {
+                                Text(
+                                    text = "Watch on YouTube",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Learn how to make this recipe",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFFF0000).copy(alpha = 0.7f)
+                                )
+                            }
                         }
                     }
                     
