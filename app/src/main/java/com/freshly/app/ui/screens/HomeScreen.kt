@@ -10,8 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -325,7 +327,7 @@ fun HomeScreen(
             }
         }
         
-        // Recommended Recipes Section
+        // Recipes Section
         item {
             Text(
                 text = "Recipes",
@@ -342,41 +344,125 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(2.dp, AI500)
+                        tonalElevation = 2.dp,
+                        shadowElevation = 4.dp
                     ) {
-                        Column {
-                            // Recipe image area with gradient
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Recipe emoji icon with gradient background
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(160.dp)
+                                    .size(80.dp)
                                     .background(
                                         brush = Brush.linearGradient(
-                                            colors = listOf(AI500, Color(0xFF7C3AED))
-                                        )
+                                            colors = listOf(AI500.copy(alpha = 0.7f), Primary500.copy(alpha = 0.7f))
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Display emoji icon for recipe
                                 Text(
                                     text = recipe.imageUrl.ifEmpty { "🍽️" },
-                                    fontSize = 72.sp
+                                    fontSize = 40.sp
                                 )
                             }
                             
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            // Recipe details
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Title
                                 Text(
                                     text = recipe.title,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                // Description
                                 Text(
-                                    text = recipe.description.take(80) + if (recipe.description.length > 80) "..." else "",
+                                    text = recipe.description,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                    maxLines = 2
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
+                                
+                                // Meta info row
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Cook time
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AccessTime,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Primary500
+                                        )
+                                        Text(
+                                            text = "${recipe.cookTime}m",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                    
+                                    // Servings
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Primary500
+                                        )
+                                        Text(
+                                            text = "${recipe.servings}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                    
+                                    // Difficulty badge
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = when (recipe.difficulty.lowercase()) {
+                                            "easy" -> Color(0xFF4CAF50).copy(alpha = 0.15f)
+                                            "medium" -> Color(0xFFFFC107).copy(alpha = 0.15f)
+                                            "hard" -> Color(0xFFFF5722).copy(alpha = 0.15f)
+                                            else -> Primary500.copy(alpha = 0.15f)
+                                        }
+                                    ) {
+                                        Text(
+                                            text = recipe.difficulty,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = when (recipe.difficulty.lowercase()) {
+                                                "easy" -> Color(0xFF4CAF50)
+                                                "medium" -> Color(0xFFFFC107)
+                                                "hard" -> Color(0xFFFF5722)
+                                                else -> Primary500
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

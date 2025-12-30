@@ -15,8 +15,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stars
@@ -43,6 +45,7 @@ import com.freshly.app.data.model.Achievement
 import com.freshly.app.data.model.AchievementCategory
 import com.freshly.app.data.model.AchievementRarity
 import com.freshly.app.ui.components.*
+import com.freshly.app.ui.theme.AI500
 import com.freshly.app.ui.theme.Primary500
 import com.freshly.app.viewmodel.ProfileViewModel
 
@@ -79,6 +82,7 @@ fun getAchievementIconColor(rarity: AchievementRarity): Color {
 fun ProfileScreen(
     onSettingsClick: () -> Unit = {},
     onEditProfileClick: () -> Unit = {},
+    onSavedRecipesClick: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -173,14 +177,107 @@ fun ProfileScreen(
                             }
                         }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         
-                        // Edit Profile Button
-                        SecondaryButton(
-                            text = "Edit Profile",
-                            onClick = onEditProfileClick,
-                            modifier = Modifier.fillMaxWidth(0.6f)
-                        )
+                        // Action Buttons Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(0.85f),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Edit Profile Button
+                            Surface(
+                                onClick = onEditProfileClick,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 2.dp,
+                                shadowElevation = 4.dp,
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = 1.5.dp,
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(Primary500.copy(alpha = 0.3f), Primary500.copy(alpha = 0.5f))
+                                    )
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(
+                                                brush = Brush.linearGradient(
+                                                    colors = listOf(Primary500.copy(alpha = 0.15f), Primary500.copy(alpha = 0.25f))
+                                                ),
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Edit,
+                                            contentDescription = null,
+                                            tint = Primary500,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Edit Profile",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                            
+                            // My Saved Recipes Button
+                            Surface(
+                                onClick = onSavedRecipesClick,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 2.dp,
+                                shadowElevation = 4.dp,
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = 1.5.dp,
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(AI500.copy(alpha = 0.3f), AI500.copy(alpha = 0.5f))
+                                    )
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(
+                                                brush = Brush.linearGradient(
+                                                    colors = listOf(AI500.copy(alpha = 0.15f), AI500.copy(alpha = 0.25f))
+                                                ),
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.MenuBook,
+                                            contentDescription = null,
+                                            tint = AI500,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "My Recipes",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

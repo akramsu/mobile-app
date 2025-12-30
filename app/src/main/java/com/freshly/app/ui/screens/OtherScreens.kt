@@ -3,6 +3,7 @@ package com.freshly.app.ui.screens
 import android.Manifest
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -371,7 +372,8 @@ fun AddItemScreen(
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
-                } else {
+                    
+                    if (imageUri == null) {
                         // Show camera capture button
                         Surface(
                             modifier = Modifier
@@ -1011,6 +1013,10 @@ fun RecipeDetailScreen(
     var aiGeneratedContent by remember { mutableStateOf<String?>(null) }
     var isGeneratingAI by remember { mutableStateOf(false) }
     
+    // Collect saved recipes to check if current recipe is already saved
+    val savedRecipes by recipeRepository.savedRecipes.collectAsState(initial = emptyList())
+    val isRecipeSaved = savedRecipes.any { it.id == recipeId }
+    
     LaunchedEffect(recipeId) {
         isLoading = true
         recipe = recipeRepository.getRecipeById(recipeId)
@@ -1292,38 +1298,40 @@ fun RecipeDetailScreen(
                         }
                     }
                     
-                    // Save Recipe Button
-                    var isSaving by remember { mutableStateOf(false) }
-                    var saveSuccess by remember { mutableStateOf(false) }
-                    
-                    PrimaryButton(
-                        text = if (saveSuccess) "✓ Saved!" else if (isSaving) "Saving..." else "Save Recipe",
-                        onClick = { 
-                            if (!isSaving && !saveSuccess) {
-                                isSaving = true
-                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                                    try {
-                                        recipeRepository.saveRecipe(currentRecipe)
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                            saveSuccess = true
-                                            isSaving = false
-                                        }
-                                        // Reset after 2 seconds
-                                        kotlinx.coroutines.delay(2000)
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                            saveSuccess = false
-                                        }
-                                    } catch (e: Exception) {
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                            isSaving = false
+                    // Save Recipe Button - only show if recipe is not already saved
+                    if (!isRecipeSaved) {
+                        var isSaving by remember { mutableStateOf(false) }
+                        var saveSuccess by remember { mutableStateOf(false) }
+                        
+                        PrimaryButton(
+                            text = if (saveSuccess) "✓ Saved!" else if (isSaving) "Saving..." else "Save Recipe",
+                            onClick = { 
+                                if (!isSaving && !saveSuccess) {
+                                    isSaving = true
+                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                        try {
+                                            recipeRepository.saveRecipe(currentRecipe)
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                saveSuccess = true
+                                                isSaving = false
+                                            }
+                                            // Reset after 2 seconds
+                                            kotlinx.coroutines.delay(2000)
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                saveSuccess = false
+                                            }
+                                        } catch (e: Exception) {
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                isSaving = false
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isSaving && !saveSuccess
-                    )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isSaving && !saveSuccess
+                        )
+                    }
 
                     // Chef's Tips (if available)
                     currentRecipe.description.takeIf { it.isNotEmpty() }?.let { tips ->

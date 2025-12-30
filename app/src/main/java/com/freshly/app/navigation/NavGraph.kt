@@ -130,5 +130,14 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() }
             )
         }
+        
+        composable(Screen.SavedRecipes.route) {
+            SavedRecipesScreen(
+                onBack = { navController.popBackStack() },
+                onRecipeClick = { recipeId ->
+                    navController.navigate(Screen.RecipeDetail.createRoute(recipeId))
+                }
+            )
+        }
     }
 }

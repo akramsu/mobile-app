@@ -47,7 +47,8 @@ fun MainAppScreen(
                 MainTab.AIAssistant.route -> AIAssistantScreen()
                 MainTab.Profile.route -> ProfileScreen(
                     onSettingsClick = { mainNavController.navigate("settings") },
-                    onEditProfileClick = { mainNavController.navigate("edit_profile") }
+                    onEditProfileClick = { mainNavController.navigate("edit_profile") },
+                    onSavedRecipesClick = { mainNavController.navigate(Screen.SavedRecipes.route) }
                 )
             }
         }
