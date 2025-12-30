@@ -60,10 +60,10 @@ class GeminiApiService(private val context: Context) {
         modelName = MODEL_NAME,
         apiKey = GeminiApiKeyManager.getCurrentApiKey(),
         generationConfig = generationConfig {
-            temperature = 0.8f
-            topK = 30
-            topP = 0.92f
-            maxOutputTokens = 512
+            temperature = 0.7f
+            topK = 20
+            topP = 0.9f
+            maxOutputTokens = 2048
         }
     )
     
@@ -208,118 +208,98 @@ class GeminiApiService(private val context: Context) {
     }
     
     /**
-     * Generate AI insights about user's pantry
-     * @return Result with insights map or error
+     * Generate AI insights about user's pantry with streaming
+     * @return Flow of insights text chunks as they arrive
      */
-    suspend fun generateInsights(
+    fun generateInsightsStream(
         pantryItems: List<PantryItem>,
         userName: String,
         dietaryRestrictions: List<String>
-    ): Result<Map<String, String>> {
-        return try {
-            // Check rate limits
-            if (!rateLimiter.canMakeRequest()) {
-                val (dailyRemaining, minuteRemaining) = rateLimiter.getRemainingRequests()
-                val message = if (minuteRemaining == 0) {
-                    "Please wait a minute before trying again."
-                } else {
-                    "Daily limit reached. Try again tomorrow."
-                }
-                Log.w(TAG, "Rate limit reached for insights generation")
-                return Result.failure(RateLimitException(message))
+    ): Flow<String> = flow {
+        // Check rate limits
+        if (!rateLimiter.canMakeRequest()) {
+            val (_, minuteRemaining) = rateLimiter.getRemainingRequests()
+            if (minuteRemaining == 0) {
+                emit("{\"error\":\"Please wait a minute before trying again.\"}")
+            } else {
+                emit("{\"error\":\"Daily limit reached. Try again tomorrow.\"}")
             }
-            
-            // Build pantry data
-            val expiringSoon = pantryItems.count { it.getDaysUntilExpiry() <= 3 }
-            val expiringItemsList = pantryItems
-                .filter { it.getDaysUntilExpiry() in 0..3 }
-                .map { "${it.name} (${it.getDaysUntilExpiry()} days)" }
-            
-            val pantryData = mapOf(
-                "totalItems" to pantryItems.size,
-                "expiringSoon" to expiringSoon,
-                "expiredThisMonth" to 0, // TODO: Track from analytics
-                "topCategories" to pantryItems
-                    .groupBy { it.category }
-                    .entries
-                    .sortedByDescending { it.value.size }
-                    .take(3)
-                    .map { it.key },
-                "expiringItemsList" to expiringItemsList
-            )
-            
-            val userProfile = mapOf(
-                "dietaryRestrictions" to dietaryRestrictions,
-                "userName" to userName
-            )
-            
-            // Build prompt
-            val prompt = GeminiPromptBuilder.buildInsightsPrompt(pantryData, userProfile)
-            
-            Log.d(TAG, "Generating insights for $userName with ${pantryItems.size} items...")
-            
-            rateLimiter.recordRequest()
-            
-            // Call API using chat model (1024 tokens)
-            try {
-                val response = createChatModel().generateContent(prompt)
-                val responseText = response.text ?: ""
-                
-                Log.d(TAG, "Received insights response (${responseText.length} chars)")
-                Log.d(TAG, "Insights response preview: ${responseText.take(200)}...")
-                
-                // Parse response
-                val insights = GeminiResponseParser.parseInsights(responseText)
-                
-                if (insights.isEmpty()) {
-                    Log.e(TAG, "No insights parsed from response. Full response: $responseText")
-                    return Result.failure(Exception("Failed to generate insights. The AI returned an unexpected format. Please try again."))
-                }
-                
-                return Result.success(insights)
-            } catch (e: Exception) {
-                // Check if it's a rate limit error and rotate key
-                if (GeminiApiKeyManager.isRateLimitError(e)) {
-                    Log.w(TAG, "Rate limit hit, rotating API key and retrying...")
-                    GeminiApiKeyManager.rotateToNextKey(context)
-                    
-                    // Retry with new key
-                    val response = createChatModel().generateContent(prompt)
-                    val responseText = response.text ?: ""
-                    
-                    // Parse response
-                    val insights = GeminiResponseParser.parseInsights(responseText)
-                    
-                    if (insights.isEmpty()) {
-                        Log.e(TAG, "No insights parsed from response after retry. Full response: $responseText")
-                        return Result.failure(Exception("Failed to generate insights. The AI returned an unexpected format. Please try again."))
-                    }
-                    
-                    return Result.success(insights)
-                } else {
-                    throw e
-                }
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Insights generation failed: ${e.message}", e)
-            
-            // Handle specific errors
-            val errorMessage = when {
-                e is RateLimitException -> e.message ?: "Rate limit exceeded"
-                e.message?.contains("429", ignoreCase = true) == true -> 
-                    "Too many requests. Please wait a minute."
-                e.message?.contains("quota", ignoreCase = true) == true -> 
-                    "Daily quota reached. Try again tomorrow."
-                e.message?.contains("API key", ignoreCase = true) == true -> 
-                    "Invalid API key. Please check your configuration."
-                e.message?.contains("network", ignoreCase = true) == true -> 
-                    "Network error. Check your connection."
-                else -> "Failed to generate insights: ${e.message}"
-            }
-            
-            Result.failure(Exception(errorMessage))
+            return@flow
         }
+        
+        // Build pantry data
+        val expiringSoon = pantryItems.count { it.getDaysUntilExpiry() <= 3 }
+        val expiringItemsList = pantryItems
+            .filter { it.getDaysUntilExpiry() in 0..3 }
+            .map { "${it.name} (${it.getDaysUntilExpiry()} days)" }
+        
+        val pantryData = mapOf(
+            "totalItems" to pantryItems.size,
+            "expiringSoon" to expiringSoon,
+            "expiredThisMonth" to 0, // TODO: Track from analytics
+            "topCategories" to pantryItems
+                .groupBy { it.category }
+                .entries
+                .sortedByDescending { it.value.size }
+                .take(3)
+                .map { it.key },
+            "expiringItemsList" to expiringItemsList
+        )
+        
+        val userProfile = mapOf(
+            "dietaryRestrictions" to dietaryRestrictions,
+            "userName" to userName
+        )
+        
+        // Build prompt
+        val prompt = GeminiPromptBuilder.buildInsightsPrompt(pantryData, userProfile)
+        
+        Log.d(TAG, "Generating insights stream for $userName with ${pantryItems.size} items...")
+        
+        rateLimiter.recordRequest()
+        
+        // Stream response using insights model with higher token limit
+        try {
+            createInsightsModel().generateContentStream(prompt)
+                .collect { chunk ->
+                    chunk.text?.let { text ->
+                        emit(text)
+                    }
+                }
+            Log.d(TAG, "Insights stream completed successfully")
+        } catch (e: Exception) {
+            // Try rotating key if it's a rate limit error
+            if (GeminiApiKeyManager.isRateLimitError(e) && GeminiApiKeyManager.getKeyCount() > 1) {
+                Log.w(TAG, "Rate limit hit, rotating to next API key...")
+                GeminiApiKeyManager.rotateToNextKey(context)
+                
+                // Retry with new key
+                createInsightsModel().generateContentStream(prompt)
+                    .collect { chunk ->
+                        chunk.text?.let { text ->
+                            emit(text)
+                        }
+                    }
+                Log.d(TAG, "Insights stream completed after key rotation")
+            } else {
+                throw e
+            }
+        }
+        
+    }.catch { e ->
+        Log.e(TAG, "Insights stream failed", e)
+        
+        val errorMessage = when {
+            e.message?.contains("429", ignoreCase = true) == true -> 
+                "Too many requests. Please wait a minute."
+            e.message?.contains("quota", ignoreCase = true) == true -> 
+                "Daily quota reached. Try again tomorrow."
+            e.message?.contains("network", ignoreCase = true) == true -> 
+                "Network error. Check your connection."
+            else -> "Failed to generate insights: ${e.message}"
+        }
+        
+        emit("{\"error\":\"$errorMessage\"}")
     }
     
     /**

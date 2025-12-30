@@ -65,21 +65,23 @@ Keep responses natural and conversational.
         val totalItems = pantryData["totalItems"] as? Int ?: 0
         val expiringSoon = pantryData["expiringSoon"] as? Int ?: 0
         val expiredThisMonth = pantryData["expiredThisMonth"] as? Int ?: 0
-        val topCategories = pantryData["topCategories"] ?: emptyList<String>()
-        val expiringItemsList = (pantryData["expiringItemsList"] as? List<*>) ?: emptyList<String>()
+        @Suppress("UNCHECKED_CAST")
+        val topCategories = (pantryData["topCategories"] as? List<String>) ?: emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val expiringItemsList = (pantryData["expiringItemsList"] as? List<String>) ?: emptyList()
         
-        val dietaryRestrictions = (userProfile["dietaryRestrictions"] as? List<*>)?.joinToString(", ") ?: "None"
+        @Suppress("UNCHECKED_CAST")
+        val dietaryRestrictions = (userProfile["dietaryRestrictions"] as? List<String>)?.joinToString(", ") ?: "None"
         val userName = userProfile["userName"] ?: "there"
         
         return """
-Pantry: $totalItems items | $expiringSoon expiring soon
-${if (expiringItemsList.isNotEmpty()) "Items: ${expiringItemsList.take(5).joinToString(", ")}" else ""}
+Pantry: $totalItems items, $expiringSoon expiring${if (expiringItemsList.isNotEmpty()) ": ${expiringItemsList.take(3).joinToString(", ")}" else ""}
 
-4 insights (max 20 words each):
-🎉 Waste prevented this week (specific numbers)
-💡 Recipe idea using specific items
-💰 Money/waste saved (estimate dollars & quantity)
-⚡ Urgent: ${if (expiringSoon > 0) "list expiring items with days left" else "say no urgent items"}
+Generate concise insights JSON (1-2 sentences max each):
+
+{"achievement":"🎉 Congrats message with waste prevented","tip":"💡 Quick recipe using ${if (expiringItemsList.isNotEmpty()) "expiring items" else "pantry items"}","savings":"💰 Money/meals saved estimate","urgent":"${if (expiringSoon > 0) "⚡ List items expiring with action" else "✅ Nothing expiring"}","environmental":"🌍 Water/CO2 saved"}
+
+Keep brief and actionable. Return only JSON.
         """.trimIndent()
     }
     

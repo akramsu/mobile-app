@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshly.app.data.api.GeminiApiService
+import com.freshly.app.data.api.GeminiResponseParser
 import com.freshly.app.data.model.PantryItem
 import com.freshly.app.data.repository.PantryRepository
 import com.freshly.app.data.repository.UserRepository
@@ -118,7 +119,7 @@ class AIAssistantViewModel(application: Application) : AndroidViewModel(applicat
     }
     
     /**
-     * Generate personalized insights
+     * Generate personalized insights with streaming
      */
     fun generateInsights() {
         if (_isLoadingInsights.value) return
@@ -136,21 +137,40 @@ class AIAssistantViewModel(application: Application) : AndroidViewModel(applicat
                 
                 android.util.Log.d("AIAssistantViewModel", "Generating insights for ${pantryItems.size} items")
                 
-                val result = geminiService.generateInsights(
+                // Collect streaming insights
+                val fullResponse = StringBuilder()
+                
+                geminiService.generateInsightsStream(
                     pantryItems,
                     user.name,
                     user.dietaryRestrictions
-                )
+                ).collect { chunk ->
+                    fullResponse.append(chunk)
+                }
                 
-                if (result.isSuccess) {
-                    val insightsMap = result.getOrNull() ?: emptyMap()
-                    android.util.Log.d("AIAssistantViewModel", "Got ${insightsMap.size} insights: ${insightsMap.keys}")
-                    _insights.value = insightsMap
-                    _showInsights.value = true
+                val responseText = fullResponse.toString()
+                android.util.Log.d("AIAssistantViewModel", "Received insights response (${responseText.length} chars)")
+                android.util.Log.d("AIAssistantViewModel", "Insights response: ${responseText.take(300)}...")
+                
+                // Check for errors in response
+                if (responseText.contains("\"error\"")) {
+                    // Extract error message from JSON
+                    val errorMatch = Regex("\"error\"\\s*:\\s*\"([^\"]+)\"").find(responseText)
+                    val errorMsg = errorMatch?.groupValues?.get(1) ?: "Failed to generate insights"
+                    _errorMessage.value = errorMsg
+                    android.util.Log.e("AIAssistantViewModel", "Insights generation returned error: $errorMsg")
                 } else {
-                    val error = result.exceptionOrNull()?.message ?: "Failed to generate insights"
-                    android.util.Log.e("AIAssistantViewModel", "Insights generation failed: $error")
-                    _errorMessage.value = error
+                    // Parse response
+                    val insights = GeminiResponseParser.parseInsights(responseText)
+                    
+                    if (insights.isEmpty()) {
+                        android.util.Log.e("AIAssistantViewModel", "No insights parsed from response. Full response: $responseText")
+                        _errorMessage.value = "Failed to generate insights. The AI returned an unexpected format. Please try again."
+                    } else {
+                        android.util.Log.d("AIAssistantViewModel", "Got ${insights.size} insights: ${insights.keys}")
+                        _insights.value = insights
+                        _showInsights.value = true
+                    }
                 }
                 
             } catch (e: Exception) {

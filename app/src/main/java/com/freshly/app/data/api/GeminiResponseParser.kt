@@ -137,45 +137,95 @@ object GeminiResponseParser {
         
         try {
             Log.d(TAG, "Parsing insights from response (${response.length} chars)")
-            val lines = response.split("\n").filter { it.isNotBlank() }
-            Log.d(TAG, "Found ${lines.size} non-blank lines")
             
-            for ((index, line) in lines.withIndex()) {
-                val trimmedLine = line.trim()
-                Log.d(TAG, "Line $index: ${trimmedLine.take(50)}...")
-                
-                when {
-                    trimmedLine.startsWith("🎉") -> {
-                        insights["achievement"] = trimmedLine
-                        Log.d(TAG, "Found achievement insight")
-                    }
-                    trimmedLine.startsWith("💡") -> {
-                        insights["tip"] = trimmedLine
-                        Log.d(TAG, "Found tip insight")
-                    }
-                    trimmedLine.startsWith("💰") -> {
-                        insights["savings"] = trimmedLine
-                        Log.d(TAG, "Found savings insight")
-                    }
-                    trimmedLine.startsWith("🌱") -> {
-                        insights["environmental"] = trimmedLine
-                        Log.d(TAG, "Found environmental insight")
-                    }
-                    trimmedLine.startsWith("⚡") -> {
-                        insights["urgent"] = trimmedLine
-                        Log.d(TAG, "Found urgent insight")
+            // Extract JSON from response (handle markdown wrapping)
+            val cleanJson = response
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+                .let {
+                    // Find first { and last }
+                    val start = it.indexOf('{')
+                    val end = it.lastIndexOf('}')
+                    if (start >= 0 && end > start) {
+                        it.substring(start, end + 1)
+                    } else {
+                        it
                     }
                 }
+            
+            Log.d(TAG, "Cleaned JSON: ${cleanJson.take(300)}...")
+            
+            // Parse as JSON object
+            val jsonObject = JSONObject(cleanJson)
+            
+            // Extract each insight field
+            if (jsonObject.has("achievement")) {
+                insights["achievement"] = jsonObject.getString("achievement")
+                Log.d(TAG, "Found achievement insight")
+            }
+            if (jsonObject.has("tip")) {
+                insights["tip"] = jsonObject.getString("tip")
+                Log.d(TAG, "Found tip insight")
+            }
+            if (jsonObject.has("savings")) {
+                insights["savings"] = jsonObject.getString("savings")
+                Log.d(TAG, "Found savings insight")
+            }
+            if (jsonObject.has("environmental")) {
+                insights["environmental"] = jsonObject.getString("environmental")
+                Log.d(TAG, "Found environmental insight")
+            }
+            if (jsonObject.has("urgent")) {
+                insights["urgent"] = jsonObject.getString("urgent")
+                Log.d(TAG, "Found urgent insight")
             }
             
             Log.d(TAG, "Parsed ${insights.size} insights: ${insights.keys.joinToString()}")
             
             if (insights.isEmpty()) {
-                Log.w(TAG, "No emoji-based insights found. Full response: $response")
+                Log.w(TAG, "No insights found in JSON. Full response: $response")
             }
             
+        } catch (e: JSONException) {
+            Log.e(TAG, "Error parsing insights as JSON, trying emoji-based fallback", e)
+            
+            // Fallback to emoji-based parsing for backwards compatibility
+            try {
+                val lines = response.split("\n").filter { it.isNotBlank() }
+                Log.d(TAG, "Trying emoji-based parsing with ${lines.size} lines")
+                
+                for ((index, line) in lines.withIndex()) {
+                    val trimmedLine = line.trim()
+                    
+                    when {
+                        trimmedLine.startsWith("🎉") -> {
+                            insights["achievement"] = trimmedLine
+                            Log.d(TAG, "Found achievement insight (emoji-based)")
+                        }
+                        trimmedLine.startsWith("💡") -> {
+                            insights["tip"] = trimmedLine
+                            Log.d(TAG, "Found tip insight (emoji-based)")
+                        }
+                        trimmedLine.startsWith("💰") -> {
+                            insights["savings"] = trimmedLine
+                            Log.d(TAG, "Found savings insight (emoji-based)")
+                        }
+                        trimmedLine.startsWith("🌱") || trimmedLine.startsWith("🌍") -> {
+                            insights["environmental"] = trimmedLine
+                            Log.d(TAG, "Found environmental insight (emoji-based)")
+                        }
+                        trimmedLine.startsWith("⚡") || trimmedLine.startsWith("✅") -> {
+                            insights["urgent"] = trimmedLine
+                            Log.d(TAG, "Found urgent insight (emoji-based)")
+                        }
+                    }
+                }
+            } catch (fallbackException: Exception) {
+                Log.e(TAG, "Fallback emoji-based parsing also failed", fallbackException)
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing insights", e)
+            Log.e(TAG, "Unexpected error parsing insights", e)
         }
         
         return insights
