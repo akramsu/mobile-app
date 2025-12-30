@@ -41,6 +41,7 @@ fun HomeScreen(
     onNotifications: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onRecipeClick: (String) -> Unit = {},
+    onSavedRecipesClick: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -345,7 +346,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = Primary500,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clickable { onSearchClick() }
+                        modifier = Modifier.clickable { onSavedRecipesClick() }
                     )
                 }
             }

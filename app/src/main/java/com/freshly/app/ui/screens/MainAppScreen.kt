@@ -34,7 +34,8 @@ fun MainAppScreen(
                     onAddItem = { mainNavController.navigate("add_item") },
                     onNotifications = { mainNavController.navigate("notifications") },
                     onSearchClick = { selectedTab = MainTab.Pantry.route },
-                    onRecipeClick = { recipeId -> mainNavController.navigate("recipe_detail/$recipeId") }
+                    onRecipeClick = { recipeId -> mainNavController.navigate("recipe_detail/$recipeId") },
+                    onSavedRecipesClick = { mainNavController.navigate(Screen.SavedRecipes.route) }
                 )
                 MainTab.Pantry.route -> PantryScreen(
                     onAddItem = { mainNavController.navigate("add_item") }
