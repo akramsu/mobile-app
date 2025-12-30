@@ -12,8 +12,7 @@ data class User(
     val streak: Int = 0,
     val avatarUrl: String? = null,
     val achievements: List<Achievement> = emptyList(),
-    val dietaryRestrictions: List<String> = emptyList(),
-    val region: String = "US"
+    val dietaryRestrictions: List<String> = emptyList()
 ) : Parcelable {
     
     fun getXpForNextLevel(): Int {
@@ -35,8 +34,7 @@ data class User(
             "level" to level,
             "streak" to streak,
             "avatarUrl" to avatarUrl,
-            "dietaryRestrictions" to dietaryRestrictions,
-            "region" to region
+            "dietaryRestrictions" to dietaryRestrictions
         )
     }
     
@@ -53,8 +51,7 @@ data class User(
                 streak = (map["streak"] as? Long)?.toInt() ?: 0,
                 avatarUrl = map["avatarUrl"] as? String,
                 achievements = emptyList(), // Load separately from subcollection
-                dietaryRestrictions = (map["dietaryRestrictions"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList(),
-                region = map["region"] as? String ?: "US"
+                dietaryRestrictions = (map["dietaryRestrictions"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
             )
         }
     }

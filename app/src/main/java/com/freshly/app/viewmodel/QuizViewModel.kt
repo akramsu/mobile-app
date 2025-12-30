@@ -1,13 +1,18 @@
 package com.freshly.app.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import com.freshly.app.data.model.QuizQuestion
 import com.freshly.app.data.model.QuizQuestions
+import com.freshly.app.data.repository.UserRepository
 
 class QuizViewModel : ViewModel() {
+    
+    private val userRepository = UserRepository()
     
     private val _questions = MutableStateFlow<List<QuizQuestion>>(emptyList())
     val questions: StateFlow<List<QuizQuestion>> = _questions.asStateFlow()
@@ -64,6 +69,17 @@ class QuizViewModel : ViewModel() {
             _isAnswerRevealed.value = false
         } else {
             _isQuizComplete.value = true
+            // Award XP based on quiz performance
+            val percentage = getScorePercentage()
+            val xpReward = when {
+                percentage >= 80 -> 50 // Perfect/Excellent
+                percentage >= 60 -> 30 // Good
+                percentage >= 40 -> 20 // Average
+                else -> 10 // Participation
+            }
+            viewModelScope.launch {
+                userRepository.addXP(xpReward)
+            }
         }
     }
     

@@ -24,6 +24,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.freshly.app.data.firebase.FirebaseManager
 import com.freshly.app.data.repository.PantryRepository
+import com.freshly.app.data.repository.UserRepository
 import com.freshly.app.navigation.AppNavGraph
 import com.freshly.app.navigation.Screen
 import com.freshly.app.notifications.ExpiryCheckWorker
@@ -71,11 +72,22 @@ fun FreshlyApp() {
     var startDestination by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     
+    // Check daily streak on app startup
     LaunchedEffect(Unit) {
         scope.launch {
             val hasOnboarded = preferencesManager.hasOnboarded.first()
             
             val isAuthenticated = FirebaseManager.isAuthenticated
+            
+            // Check and update daily streak if authenticated
+            if (isAuthenticated) {
+                try {
+                    val userRepository = UserRepository()
+                    userRepository.checkAndUpdateDailyStreak()
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error checking daily streak", e)
+                }
+            }
             
             startDestination = when {
                 !isAuthenticated -> Screen.Splash.route

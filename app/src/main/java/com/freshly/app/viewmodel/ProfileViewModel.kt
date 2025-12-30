@@ -7,6 +7,7 @@ import com.freshly.app.data.repository.UserRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
     
@@ -21,5 +22,11 @@ class ProfileViewModel : ViewModel() {
     
     suspend fun updateProfile(name: String, avatarUrl: String) {
         repository.updateUserProfile(name, avatarUrl)
+    }
+    
+    fun updateDietaryRestrictions(restrictions: List<String>) {
+        viewModelScope.launch {
+            repository.updateDietaryRestrictions(restrictions)
+        }
     }
 }

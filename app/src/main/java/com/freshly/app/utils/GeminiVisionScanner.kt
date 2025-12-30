@@ -21,12 +21,18 @@ import java.io.InputStream
  * and extract structured information including product name, expiry date,
  * quantity, and category - even when they appear in different locations.
  * 
- * Advantages over traditional OCR:
- * - Context-aware: Understands the difference between MFG and EXP dates
- * - Handles various layouts: Product info can be anywhere on the package
+ * Key Features:
+ * - Text Extraction: Reads labels for packaged products (MFG vs EXP dates)
+ * - Visual Recognition: Identifies fresh produce, fruits, vegetables without labels
+ * - Freshness Analysis: Predicts shelf life based on visual appearance and ripeness
+ * - Smart Detection: Automatically determines if item is labeled or fresh
  * - Multi-language support: Works with different languages
- * - Image quality tolerant: Works even with blurry or partial images
  * - Structured output: Returns JSON with confidence scores
+ * 
+ * Examples:
+ * - Packaged snack → Reads label for name, expiry date
+ * - Apple → Identifies "Apple", predicts 7-10 days shelf life based on appearance
+ * - Tomato → Identifies "Tomato", estimates 3-5 days based on ripeness
  */
 class GeminiVisionScanner(private val context: Context) {
     
@@ -113,41 +119,60 @@ class GeminiVisionScanner(private val context: Context) {
     }
     
     /**
-     * Create a detailed prompt for Gemini to analyze product images
+     * Create an intelligent prompt for Gemini to analyze both labeled and unlabeled items
      */
     private fun createProductScanPrompt(): String {
+        val today = java.time.LocalDate.now().toString()
         return """
-Analyze this product image and extract the following information. Look carefully at the entire package.
+Analyze this image intelligently and extract food/product information. Follow these steps:
 
-IMPORTANT INSTRUCTIONS:
-1. Product Name: The brand name and product description (e.g., "Lay's Classic Potato Chips")
-2. Expiry Date: Look for "EXP", "Best Before", "Use By", "BB", or similar labels. DO NOT confuse with manufacturing date (MFG).
-3. Quantity: The net weight or volume (e.g., "500g", "1L", "250ml")
-4. Category: Classify as one of: Fridge, Freezer, or Pantry
+STEP 1: DETERMINE ITEM TYPE
+- Is this a PACKAGED product with visible labels/text?
+- OR is this FRESH produce/food without packaging (fruit, vegetable, meat, etc.)?
 
-CRITICAL: 
-- The expiry date and product name may be in DIFFERENT locations on the package
-- Prioritize EXPIRY date over manufacturing date
-- If you see both MFG and EXP dates, only return the EXP date
-- For dates, convert to YYYY-MM-DD format
-- For quantity, extract just the number (e.g., from "500g" return "500")
-- For unit, extract just the unit (e.g., from "500g" return "g")
+STEP 2A: FOR PACKAGED PRODUCTS (with labels):
+1. Product Name: Extract brand and product name from label
+2. Expiry Date: Find "EXP", "Best Before", "Use By", "BB" (NOT manufacturing date)
+3. Quantity: Net weight/volume from label
+4. Category: Fridge/Freezer/Pantry based on storage instructions
 
-Return ONLY a JSON object in this exact format (no markdown, no code blocks):
+STEP 2B: FOR FRESH PRODUCE (no label):
+1. Product Name: Identify the item (e.g., "Banana", "Tomato", "Chicken Breast")
+2. Visual Analysis: Assess ripeness, freshness, color, spots, bruising
+3. Expiry Prediction: Based on visual condition, predict shelf life:
+   - Calculate expiry as: TODAY ($today) + predicted shelf life days
+   - Examples:
+     * Green banana → 5-7 days
+     * Ripe banana (yellow) → 2-3 days
+     * Overripe banana (brown spots) → 1 day
+     * Fresh tomato (firm, red) → 5-7 days
+     * Soft tomato → 2-3 days
+     * Fresh leafy greens → 3-5 days
+     * Fresh meat (good color) → 2-3 days
+     * Fresh fish → 1-2 days
+4. Quantity: Estimate count (e.g., "3" for 3 apples)
+5. Category: Always "Fridge" for fresh produce/meat
+
+CRITICAL RULES:
+- For dates: Return YYYY-MM-DD format
+- For packaged items: Prioritize printed expiry over predictions
+- For fresh items: Be conservative with shelf life predictions
+- If both MFG and EXP dates exist, return only EXP
+- Confidence should reflect certainty of ALL fields
+
+Return ONLY a valid JSON object (no markdown):
 {
   "productName": "string or null",
   "expiryDate": "YYYY-MM-DD or null",
-  "quantity": "number string or null",
+  "quantity": "number or null",
   "unit": "g/kg/ml/l/items or null",
   "category": "Fridge/Freezer/Pantry or null",
   "confidence": 0.0-1.0
 }
 
-If you cannot detect a field with confidence, set it to null.
-Confidence score should reflect how certain you are about ALL extracted fields combined.
-
-Example response:
-{"productName":"Lay's Classic Potato Chips","expiryDate":"2024-03-15","quantity":"500","unit":"g","category":"Pantry","confidence":0.85}
+Examples:
+Packaged: {"productName":"Lay's Chips","expiryDate":"2024-03-15","quantity":"500","unit":"g","category":"Pantry","confidence":0.9}
+Fresh: {"productName":"Banana","expiryDate":"2025-01-05","quantity":"3","unit":"items","category":"Fridge","confidence":0.75}
 """.trimIndent()
     }
     

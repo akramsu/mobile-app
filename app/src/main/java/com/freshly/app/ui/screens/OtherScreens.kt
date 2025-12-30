@@ -10,7 +10,22 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -19,12 +34,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -828,7 +845,7 @@ fun AddItemScreen(
                                         expiryDate = expiryDate,
                                         imageUrl = uploadedImageUrl
                                     )
-                                    viewModel.repository.addItem(newItem)
+                                    viewModel.addItem(newItem)
                                     onItemAdded()
                                 }
                             }
@@ -1728,7 +1745,6 @@ fun SettingsScreen(
     }
     
     var dietaryRestrictions by remember { mutableStateOf(setOf("vegetarian")) }
-    var region by remember { mutableStateOf("US") }
     var privateProfile by remember { mutableStateOf(false) }
     var twoFactor by remember { mutableStateOf(false) }
 
@@ -2008,7 +2024,7 @@ fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EditProfileScreen(
     onBack: () -> Unit,
@@ -2019,9 +2035,24 @@ fun EditProfileScreen(
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var avatarUrl by remember { mutableStateOf("") }
+    var selectedRestrictions by remember { mutableStateOf<Set<String>>(emptySet()) }
     var isSaving by remember { mutableStateOf(false) }
     var isUploading by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+    
+    // Available dietary restrictions
+    val availableRestrictions = listOf(
+        "Vegetarian",
+        "Vegan",
+        "Gluten-Free",
+        "Dairy-Free",
+        "Nut-Free",
+        "Halal",
+        "Kosher",
+        "Keto",
+        "Paleo",
+        "Low-Carb"
+    )
     
     val scope = rememberCoroutineScope()
     
@@ -2066,6 +2097,7 @@ fun EditProfileScreen(
         name = user.name ?: ""
         email = user.email ?: ""
         avatarUrl = user.avatarUrl ?: ""
+        selectedRestrictions = user.dietaryRestrictions.toSet()
     }
     
     Scaffold(
@@ -2213,6 +2245,85 @@ fun EditProfileScreen(
                 }
             }
             
+            // Dietary Restrictions Section
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Dietary Restrictions",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    
+                    Text(
+                        text = "Select your dietary preferences to get personalized recipe recommendations",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    
+                    // Restriction chips
+                    androidx.compose.foundation.layout.FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        availableRestrictions.forEach { restriction ->
+                            val isSelected = selectedRestrictions.contains(restriction)
+                            androidx.compose.material3.FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedRestrictions = if (isSelected) {
+                                        selectedRestrictions - restriction
+                                    } else {
+                                        selectedRestrictions + restriction
+                                    }
+                                },
+                                label = {
+                                    Text(
+                                        text = restriction,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                leadingIcon = if (isSelected) {
+                                    {
+                                        androidx.compose.material3.Icon(
+                                            imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                } else null,
+                                colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Primary500.copy(alpha = 0.2f),
+                                    selectedLabelColor = Primary500,
+                                    selectedLeadingIconColor = Primary500
+                                )
+                            )
+                        }
+                    }
+                    
+                    if (selectedRestrictions.isNotEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "ℹ️", fontSize = 16.sp)
+                                Text(
+                                    text = "Selected: ${selectedRestrictions.joinToString(", ")}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Save Button
             item {
                 PrimaryButton(
@@ -2222,6 +2333,7 @@ fun EditProfileScreen(
                             isSaving = true
                             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
                                 viewModel.updateProfile(name, avatarUrl)
+                                viewModel.updateDietaryRestrictions(selectedRestrictions.toList())
                                 kotlinx.coroutines.delay(500)
                                 isSaving = false
                                 onBack()

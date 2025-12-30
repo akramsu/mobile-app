@@ -4,7 +4,7 @@ data class QuizQuestion(
     val id: Int,
     val question: String,
     val options: List<String>,
-    val correctAnswer: Int, // Index of correct answer
+    val correctAnswer: Int,
     val explanation: String,
     val category: QuizCategory
 )
@@ -18,7 +18,6 @@ enum class QuizCategory {
 
 object QuizQuestions {
     val allQuestions = listOf(
-        // EXPIRATION (15 questions)
         QuizQuestion(
             id = 1,
             question = "How long can eggs typically last in the refrigerator?",
@@ -155,7 +154,7 @@ object QuizQuestions {
             category = QuizCategory.EXPIRATION
         ),
         
-        // STORAGE (10 questions)
+
         QuizQuestion(
             id = 2,
             question = "What's the best way to store fresh herbs to keep them longer?",
@@ -376,7 +375,6 @@ object QuizQuestions {
             category = QuizCategory.STORAGE
         ),
         
-        // FOOD_SAFETY (10 questions)
         QuizQuestion(
             id = 4,
             question = "How long can cooked chicken safely stay in the fridge?",
@@ -567,7 +565,6 @@ object QuizQuestions {
             category = QuizCategory.FOOD_SAFETY
         ),
         
-        // NUTRITION (7 questions)
         QuizQuestion(
             id = 29,
             question = "Which vegetable loses the most nutrients when overcooked?",

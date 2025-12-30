@@ -79,7 +79,7 @@ class AIChefViewModel(application: Application) : AndroidViewModel(application) 
                     recipeRepository.generateRecipes(
                         selectedIngredients = _selectedItems.value.toList(),
                         dietaryPreferences = dietaryPreferences,
-                        skillLevel = "Medium" // Could make this user-configurable
+                        skillLevel = "Medium"
                     ).collect { recipes ->
                         if (recipes.isNotEmpty()) {
                             _recipes.value = recipes

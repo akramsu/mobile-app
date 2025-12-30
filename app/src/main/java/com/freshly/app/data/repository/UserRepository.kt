@@ -117,6 +117,23 @@ class UserRepository {
     }
     
     /**
+     * Update dietary restrictions
+     */
+    suspend fun updateDietaryRestrictions(restrictions: List<String>) {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return
+        
+        try {
+            FirebaseManager.getUserDocument(userId)
+                .update("dietaryRestrictions", restrictions)
+                .await()
+            Log.d("UserRepository", "Dietary restrictions updated successfully")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error updating dietary restrictions", e)
+        }
+    }
+    
+    /**
      * Add XP to user
      */
     suspend fun addXP(amount: Int) {
@@ -155,6 +172,58 @@ class UserRepository {
                 .await()
         } catch (e: Exception) {
             Log.e("UserRepository", "Error incrementing streak", e)
+        }
+    }
+    
+    /**
+     * Check and update daily streak
+     * Returns true if streak was updated
+     */
+    suspend fun checkAndUpdateDailyStreak(): Boolean {
+        val userId = FirebaseManager.userId
+        if (userId.isEmpty()) return false
+        
+        try {
+            val prefs = FirebaseManager.firestore
+                .collection("users")
+                .document(userId)
+                .collection("preferences")
+                .document("streak")
+                .get()
+                .await()
+            
+            val lastCheckDate = prefs.getString("lastCheckDate")
+            val today = java.time.LocalDate.now().toString()
+            
+            if (lastCheckDate != today) {
+                // Check if streak should continue or reset
+                val yesterday = java.time.LocalDate.now().minusDays(1).toString()
+                
+                if (lastCheckDate == yesterday) {
+                    // Continue streak
+                    incrementStreak()
+                } else if (lastCheckDate != null) {
+                    // Reset streak (missed a day)
+                    FirebaseManager.getUserDocument(userId)
+                        .update("streak", 0)
+                        .await()
+                }
+                
+                // Update last check date
+                FirebaseManager.firestore
+                    .collection("users")
+                    .document(userId)
+                    .collection("preferences")
+                    .document("streak")
+                    .set(mapOf("lastCheckDate" to today))
+                    .await()
+                
+                return true
+            }
+            return false
+        } catch (e: Exception) {
+            Log.e("UserRepository", "Error checking daily streak", e)
+            return false
         }
     }
     
@@ -268,8 +337,7 @@ class UserRepository {
                 streak = 0,
                 avatarUrl = null,
                 achievements = emptyList(),
-                dietaryRestrictions = emptyList(),
-                region = "US"
+                dietaryRestrictions = emptyList()
             )
             
             FirebaseManager.getUserDocument(userId).set(newUser.toMap()).await()
@@ -298,8 +366,7 @@ class UserRepository {
             streak = 0,
             avatarUrl = null,
             achievements = getSampleAchievements(),
-            dietaryRestrictions = emptyList(),
-            region = "US"
+            dietaryRestrictions = emptyList()
         )
     }
     

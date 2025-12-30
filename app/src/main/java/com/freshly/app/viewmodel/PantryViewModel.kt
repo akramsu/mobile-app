@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.freshly.app.data.model.Category
 import com.freshly.app.data.model.PantryItem
 import com.freshly.app.data.repository.PantryRepository
+import com.freshly.app.data.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 class PantryViewModel : ViewModel() {
     
     val repository = PantryRepository()
+    private val userRepository = UserRepository()
     
     private val _deletedItem = MutableStateFlow<PantryItem?>(null)
     
@@ -34,6 +36,14 @@ class PantryViewModel : ViewModel() {
                 repository.addItem(item)
                 _deletedItem.value = null
             }
+        }
+    }
+    
+    fun addItem(item: PantryItem) {
+        viewModelScope.launch {
+            repository.addItem(item)
+            // Award XP for adding an item to pantry
+            userRepository.addXP(10)
         }
     }
 }

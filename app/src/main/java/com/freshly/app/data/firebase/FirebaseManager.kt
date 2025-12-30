@@ -37,24 +37,6 @@ object FirebaseManager {
     val isAuthenticated: Boolean
         get() = auth.currentUser != null
     
-
-
-//old anonymous sign in method for dev purposes only (for now)
-    suspend fun signInAnonymously(): Result<FirebaseUser> {
-        return try {
-            val result = auth.signInAnonymously().await()
-            val user = result.user
-            if (user != null) {
-                _currentUser.value = user
-                Result.success(user)
-            } else {
-                Result.failure(Exception("Failed to sign in anonymously"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
     /**
      * Sign in with email and password
      */
