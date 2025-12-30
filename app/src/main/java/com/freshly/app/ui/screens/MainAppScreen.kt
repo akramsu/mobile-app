@@ -48,7 +48,8 @@ fun MainAppScreen(
                 MainTab.Profile.route -> ProfileScreen(
                     onSettingsClick = { mainNavController.navigate("settings") },
                     onEditProfileClick = { mainNavController.navigate("edit_profile") },
-                    onSavedRecipesClick = { mainNavController.navigate(Screen.SavedRecipes.route) }
+                    onSavedRecipesClick = { mainNavController.navigate(Screen.SavedRecipes.route) },
+                    onQuizClick = { mainNavController.navigate("quiz") }
                 )
             }
         }

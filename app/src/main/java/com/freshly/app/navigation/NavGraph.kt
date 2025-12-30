@@ -139,5 +139,11 @@ fun AppNavGraph(
                 }
             )
         }
+        
+        composable("quiz") {
+            QuizScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }

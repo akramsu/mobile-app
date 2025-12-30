@@ -485,20 +485,28 @@ fun QuickActionButton(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
     ) {
-        // Circular button with gradient background when selected
+        // Circular button with gradient border
         Surface(
             onClick = onClick,
             modifier = Modifier
                 .size(64.dp)
                 .shadow(
-                    elevation = if (isSelected) 8.dp else 4.dp,
+                    elevation = if (isSelected) 8.dp else 6.dp,
                     shape = CircleShape,
                     clip = false
                 ),
             shape = CircleShape,
             color = if (isSelected) Primary500 else Color.White,
             border = if (!isSelected) {
-                BorderStroke(1.5.dp, Color(0xFFE5E7EB))
+                BorderStroke(
+                    width = 2.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Primary500.copy(alpha = 0.6f),
+                            Primary500.copy(alpha = 0.3f)
+                        )
+                    )
+                )
             } else null
         ) {
             Box(

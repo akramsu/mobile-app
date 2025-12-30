@@ -83,6 +83,7 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit = {},
     onEditProfileClick: () -> Unit = {},
     onSavedRecipesClick: () -> Unit = {},
+    onQuizClick: () -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -179,37 +180,40 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.height(20.dp))
                         
-                        // Action Buttons Row
+                        // Action Buttons Row - All 3 buttons horizontally aligned
                         Row(
-                            modifier = Modifier.fillMaxWidth(0.85f),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier.fillMaxWidth(0.95f),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             // Edit Profile Button
                             Surface(
                                 onClick = onEditProfileClick,
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 color = MaterialTheme.colorScheme.surface,
-                                tonalElevation = 2.dp,
-                                shadowElevation = 4.dp,
+                                tonalElevation = 3.dp,
+                                shadowElevation = 6.dp,
                                 border = androidx.compose.foundation.BorderStroke(
-                                    width = 1.5.dp,
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(Primary500.copy(alpha = 0.3f), Primary500.copy(alpha = 0.5f))
+                                    width = 2.dp,
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(Primary500, Primary500.copy(alpha = 0.6f))
                                     )
                                 )
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 12.dp),
+                                    modifier = Modifier.padding(vertical = 18.dp, horizontal = 8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .size(50.dp)
                                             .background(
-                                                brush = Brush.linearGradient(
-                                                    colors = listOf(Primary500.copy(alpha = 0.15f), Primary500.copy(alpha = 0.25f))
+                                                brush = Brush.radialGradient(
+                                                    colors = listOf(
+                                                        Primary500.copy(alpha = 0.2f),
+                                                        Primary500.copy(alpha = 0.05f)
+                                                    )
                                                 ),
                                                 shape = CircleShape
                                             ),
@@ -219,44 +223,50 @@ fun ProfileScreen(
                                             imageVector = Icons.Filled.Edit,
                                             contentDescription = null,
                                             tint = Primary500,
-                                            modifier = Modifier.size(22.dp)
+                                            modifier = Modifier.size(26.dp)
                                         )
                                     }
                                     Text(
-                                        text = "Edit Profile",
+                                        text = "Edit\nProfile",
                                         style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 16.sp,
+                                        fontSize = 13.sp
                                     )
                                 }
                             }
                             
-                            // My Saved Recipes Button
+                            // My Recipes Button
                             Surface(
                                 onClick = onSavedRecipesClick,
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 color = MaterialTheme.colorScheme.surface,
-                                tonalElevation = 2.dp,
-                                shadowElevation = 4.dp,
+                                tonalElevation = 3.dp,
+                                shadowElevation = 6.dp,
                                 border = androidx.compose.foundation.BorderStroke(
-                                    width = 1.5.dp,
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(AI500.copy(alpha = 0.3f), AI500.copy(alpha = 0.5f))
+                                    width = 2.dp,
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(AI500, AI500.copy(alpha = 0.6f))
                                     )
                                 )
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 12.dp),
+                                    modifier = Modifier.padding(vertical = 18.dp, horizontal = 8.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(44.dp)
+                                            .size(50.dp)
                                             .background(
-                                                brush = Brush.linearGradient(
-                                                    colors = listOf(AI500.copy(alpha = 0.15f), AI500.copy(alpha = 0.25f))
+                                                brush = Brush.radialGradient(
+                                                    colors = listOf(
+                                                        AI500.copy(alpha = 0.2f),
+                                                        AI500.copy(alpha = 0.05f)
+                                                    )
                                                 ),
                                                 shape = CircleShape
                                             ),
@@ -266,14 +276,68 @@ fun ProfileScreen(
                                             imageVector = Icons.Filled.MenuBook,
                                             contentDescription = null,
                                             tint = AI500,
-                                            modifier = Modifier.size(22.dp)
+                                            modifier = Modifier.size(26.dp)
                                         )
                                     }
                                     Text(
-                                        text = "My Recipes",
+                                        text = "My\nRecipes",
                                         style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 16.sp,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                            
+                            // Food Quiz Button
+                            Surface(
+                                onClick = onQuizClick,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(20.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 3.dp,
+                                shadowElevation = 6.dp,
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = 2.dp,
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(Color(0xFFFF6B6B), Color(0xFFFFD93D))
+                                    )
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(vertical = 18.dp, horizontal = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(50.dp)
+                                            .background(
+                                                brush = Brush.radialGradient(
+                                                    colors = listOf(
+                                                        Color(0xFFFFD93D).copy(alpha = 0.2f),
+                                                        Color(0xFFFF6B6B).copy(alpha = 0.05f)
+                                                    )
+                                                ),
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "🧠",
+                                            fontSize = 28.sp
+                                        )
+                                    }
+                                    Text(
+                                        text = "Food\nQuiz",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 16.sp,
+                                        fontSize = 13.sp
                                     )
                                 }
                             }
