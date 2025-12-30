@@ -444,7 +444,6 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
         // Calculate insights
         val expiringItems = pantryItems.filter { it.getDaysUntilExpiry() in 0..3 }
         val expiredItems = pantryItems.filter { it.getDaysUntilExpiry() < 0 }
-        val freshItems = pantryItems.filter { it.getDaysUntilExpiry() > 7 }
         val totalItems = pantryItems.size
         
         // Calculate next expiry
@@ -453,9 +452,20 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
             .minByOrNull { it.getDaysUntilExpiry() }
             ?.getDaysUntilExpiry() ?: 0
         
-        // Calculate health score (percentage of fresh items)
+        // Calculate health score based on category-appropriate freshness thresholds
+        // Fridge items (produce): >3 days is good (fruits/veggies have shorter lifespan)
+        // Pantry/Freezer items: >7 days is good (longer shelf life expected)
+        val healthyItems = pantryItems.filter { item ->
+            val daysLeft = item.getDaysUntilExpiry()
+            when (item.category) {
+                com.freshly.app.data.model.Category.FRIDGE -> daysLeft > 3
+                com.freshly.app.data.model.Category.FREEZER, 
+                com.freshly.app.data.model.Category.PANTRY -> daysLeft > 7
+            }
+        }
+        
         val healthScore = if (totalItems > 0) {
-            ((freshItems.size.toFloat() / totalItems) * 100).toInt()
+            ((healthyItems.size.toFloat() / totalItems) * 100).toInt()
         } else 100
         
         // Single Row with 5 Most Important Metrics
