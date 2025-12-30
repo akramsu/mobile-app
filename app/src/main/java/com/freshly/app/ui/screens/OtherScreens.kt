@@ -76,6 +76,9 @@ fun AddItemScreen(
     var unit by remember { mutableStateOf("items") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var secondImageUri by remember { mutableStateOf<Uri?>(null) }
+    var uploadedImageUrl by remember { mutableStateOf<String?>(null) }
+    var isUploadingImage by remember { mutableStateOf(false) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     var isProcessingImage by remember { mutableStateOf(false) }
     var isProcessingSecondPhoto by remember { mutableStateOf(false) }
@@ -133,6 +136,26 @@ fun AddItemScreen(
                     showSecondPhotoOption = true
                 } finally {
                     isProcessingImage = false
+                }
+                
+                // Upload image to Cloudinary for permanent storage
+                isUploadingImage = true
+                uploadError = null
+                try {
+                    Log.d("AddItemScreen", "Uploading image to Cloudinary...")
+                    val cloudinaryUrl = com.freshly.app.utils.CloudinaryManager.uploadImage(
+                        context = context,
+                        imageUri = photoUri,
+                        folder = "pantry_items",
+                        maxSize = 800
+                    )
+                    uploadedImageUrl = cloudinaryUrl
+                    Log.d("AddItemScreen", "Image uploaded successfully: $cloudinaryUrl")
+                } catch (e: Exception) {
+                    Log.e("AddItemScreen", "Failed to upload image", e)
+                    uploadError = "Image upload failed: ${e.message}"
+                } finally {
+                    isUploadingImage = false
                 }
             }
         }
@@ -229,7 +252,7 @@ fun AddItemScreen(
                             )
                             
                             // Processing overlay
-                            if (isProcessingImage) {
+                            if (isProcessingImage || isUploadingImage) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -245,7 +268,7 @@ fun AddItemScreen(
                                             modifier = Modifier.size(36.dp)
                                         )
                                         Text(
-                                            text = "AI scanning...",
+                                            text = if (isProcessingImage) "AI scanning..." else "Uploading image...",
                                             color = Color.White,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Medium
@@ -258,6 +281,8 @@ fun AddItemScreen(
                             IconButton(
                                 onClick = {
                                     if (cameraPermissionState.status.isGranted) {
+                                        uploadedImageUrl = null
+                                        uploadError = null
                                         cameraLauncher.launch(photoUri)
                                     } else {
                                         cameraPermissionState.launchPermissionRequest()
@@ -273,6 +298,24 @@ fun AddItemScreen(
                                     contentDescription = "Re-scan label",
                                     tint = Primary500
                                 )
+                            }
+                            
+                            // Upload success indicator
+                            if (uploadedImageUrl != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(8.dp)
+                                        .background(Color(0xFF4CAF50), CircleShape)
+                                        .padding(8.dp)
+                                ) {
+                                    Text(
+                                        text = "\u2713",
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                             
                             // Confidence indicator
@@ -317,7 +360,18 @@ fun AddItemScreen(
                                 }
                             }
                         }
-                    } else {
+                    }
+                    
+                    // Upload error message
+                    if (uploadError != null) {
+                        Text(
+                            text = uploadError ?: "",
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                } else {
                         // Show camera capture button
                         Surface(
                             modifier = Modifier
@@ -769,13 +823,14 @@ fun AddItemScreen(
                                         unit = unit,
                                         addedDate = purchaseDate,
                                         expiryDate = expiryDate,
-                                        imageUrl = imageUri?.toString()
+                                        imageUrl = uploadedImageUrl
                                     )
                                     viewModel.repository.addItem(newItem)
                                     onItemAdded()
                                 }
                             }
                         },
+                        enabled = !isUploadingImage,
                         modifier = Modifier.weight(1f)
                     )
                 }
