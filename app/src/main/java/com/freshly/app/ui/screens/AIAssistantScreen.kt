@@ -14,6 +14,10 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -443,7 +447,18 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
         val freshItems = pantryItems.filter { it.getDaysUntilExpiry() > 7 }
         val totalItems = pantryItems.size
         
-        // Single Row of Insights
+        // Calculate next expiry
+        val nextExpiry = pantryItems
+            .filter { it.getDaysUntilExpiry() >= 0 }
+            .minByOrNull { it.getDaysUntilExpiry() }
+            ?.getDaysUntilExpiry() ?: 0
+        
+        // Calculate health score (percentage of fresh items)
+        val healthScore = if (totalItems > 0) {
+            ((freshItems.size.toFloat() / totalItems) * 100).toInt()
+        } else 100
+        
+        // Single Row with 5 Most Important Metrics
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -458,16 +473,6 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
                 color = Primary500
             )
             
-            // Items Saved (Fresh items in good condition)
-            CompactInsightCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Filled.CheckCircle,
-                iconTint = Color(0xFF4CAF50),
-                value = "${freshItems.size}",
-                label = "Saved",
-                color = Color(0xFF4CAF50)
-            )
-            
             // Items at Risk (Expiring Soon)
             CompactInsightCard(
                 modifier = Modifier.weight(1f),
@@ -478,14 +483,42 @@ private fun QuickInsightsSection(pantryItems: List<com.freshly.app.data.model.Pa
                 color = Color(0xFFFF9800)
             )
             
-            // Items Wasted (Expired)
+            // Items Expired
             CompactInsightCard(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Filled.Delete,
                 iconTint = MaterialTheme.colorScheme.error,
                 value = "${expiredItems.size}",
-                label = "Wasted",
+                label = "Expired",
                 color = MaterialTheme.colorScheme.error
+            )
+            
+            // Next Item Expiring
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = androidx.compose.material.icons.Icons.Filled.DateRange,
+                iconTint = if (nextExpiry <= 1) MaterialTheme.colorScheme.error else Color(0xFFFF9800),
+                value = "${nextExpiry}d",
+                label = "Next Exp",
+                color = if (nextExpiry <= 1) MaterialTheme.colorScheme.error else Color(0xFFFF9800)
+            )
+            
+            // Health Score
+            CompactInsightCard(
+                modifier = Modifier.weight(1f),
+                icon = androidx.compose.material.icons.Icons.Filled.FavoriteBorder,
+                iconTint = when {
+                    healthScore >= 70 -> Color(0xFF4CAF50)
+                    healthScore >= 40 -> Color(0xFFFF9800)
+                    else -> MaterialTheme.colorScheme.error
+                },
+                value = "$healthScore%",
+                label = "Health",
+                color = when {
+                    healthScore >= 70 -> Color(0xFF4CAF50)
+                    healthScore >= 40 -> Color(0xFFFF9800)
+                    else -> MaterialTheme.colorScheme.error
+                }
             )
         }
     }
