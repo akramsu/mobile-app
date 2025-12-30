@@ -4,8 +4,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
 
@@ -25,11 +23,6 @@ object FirebaseManager {
         FirebaseAuth.getInstance()
     }
     
-    // Current user state
-    private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
-    val currentUser: StateFlow<FirebaseUser?> = _currentUser
-    
-
     val userId: String
         get() = auth.currentUser?.uid ?: ""
     
@@ -45,7 +38,6 @@ object FirebaseManager {
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val user = result.user
             if (user != null) {
-                _currentUser.value = user
                 Result.success(user)
             } else {
                 Result.failure(Exception("Failed to sign in"))
@@ -70,7 +62,6 @@ object FirebaseManager {
                     .build()
                 user.updateProfile(profileUpdates).await()
                 
-                _currentUser.value = user
                 Result.success(user)
             } else {
                 Result.failure(Exception("Failed to create account"))
@@ -105,7 +96,6 @@ object FirebaseManager {
             }.build()
             
             user.updateProfile(profileUpdates).await()
-            _currentUser.value = user
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -117,7 +107,6 @@ object FirebaseManager {
      */
     fun signOut() {
         auth.signOut()
-        _currentUser.value = null
     }
     
     /**
@@ -128,7 +117,6 @@ object FirebaseManager {
         const val PANTRY_ITEMS = "pantryItems"
         const val RECIPES = "recipes"
         const val ACHIEVEMENTS = "achievements"
-        const val ANALYTICS = "analytics"
     }
     
     /**
