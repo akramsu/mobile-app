@@ -232,11 +232,6 @@ Key dependencies:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👨‍💻 Developer
-
-**Akram**
-- GitHub: [@akramsu](https://github.com/akramsu)
-
 ## 🙏 Acknowledgments
 
 - [Google Gemini AI](https://ai.google.dev/) for AI-powered insights and vision scanning
